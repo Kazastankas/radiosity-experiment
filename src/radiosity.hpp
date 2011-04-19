@@ -16,12 +16,13 @@ struct Camera
 };
 
 // A plane is determined by a corner of origin, two vectors, and
-// ranges dictating a rectangle (if any ranges exist).
+// ranges dictating a rectangle (if any ranges exist). Each plane has a color.
 struct Plane
 {
     float3 corner_pos;
     float3 x_vec;
     float3 y_vec;
+    float3 color;
     float x_min;
     float x_max;
     float y_min;

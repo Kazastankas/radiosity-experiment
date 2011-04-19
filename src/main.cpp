@@ -28,6 +28,70 @@ static const int HEIGHT = 512;
 static const double FPS = 60.0;
 static const char* TITLE = "Radiosity Renderer";
 
+bool initialize_scene(Scene* scene) 
+{
+  Light outside_light;
+  outside_light.pos = make_float3(0, 0, 10);
+  outsied_light.color = make_float3(1, 1, 1);
+  scene->lights.push_back(outside_light);
+  
+  Plane top_wall;
+  top_wall.corner_pos = make_float3(-2.5, 5, -2.5);
+  top_wall.color = make_float3(0, 1, 0);
+  top_wall.x_vec = make_float3(5, 0, 0);
+  top_wall.y_vec = make_float3(0, 0, 5);
+  top_wall.x_min = top_wall.y_min = 0;
+  top_wall.x_max = top_wall.y_max = 1;
+  
+  Plane bot_wall;
+  bot_wall.corner_pos = make_float3(-2.5, -5, -2.5);
+  bot_wall.color = make_float3(1, 0, 1);
+  bot_wall.x_vec = make_float3(5, 0, 0);
+  bot_wall.y_vec = make_float3(0, 0, 5);
+  bot_wall.x_min = bot_wall.y_min = 0;
+  bot_wall.x_max = bot_wall.y_max = 1;
+  
+  Plane left_wall;
+  left_wall.corner_pos = make_float3(-5, -2.5, -2.5);
+  left_wall.color = make_float3(0, 1, 1);
+  left_wall.x_vec = make_float3(0, 5, 0);
+  left_wall.y_vec = make_float3(0, 0, 5);
+  left_wall.x_min = left_wall.y_min = 0;
+  left_wall.x_max = left_wall.y_max = 1;
+  
+  Plane right_wall;
+  right_wall.corner_pos = make_float3(5, -2.5, -2.5);
+  right_wall.color = make_float3(1, 0, 0);
+  right_wall.x_vec = make_float3(0, 5, 0);
+  right_wall.y_vec = make_float3(0, 0, 5);
+  right_wall.x_min = right_wall.y_min = 0;
+  right_wall.x_max = right_wall.y_max = 1;
+  
+  Plane front_wall;
+  front_wall.corner_pos = make_float3(-2.5, -2.5, -5);
+  front_wall.color = make_float3(1, 1, 0);
+  front_wall.x_vec = make_float3(0, 5, 0);
+  front_wall.y_vec = make_float3(5, 0, 0);
+  front_wall.x_min = front_wall.y_min = 0;
+  front_wall.x_max = front_wall.y_max = 1;
+  
+  Plane back_wall;
+  back_wall.corner_pos = make_float3(-2.5, -2.5, 5);
+  back_wall.color = make_float3(0, 0, 1);
+  back_wall.x_vec = make_float3(0, 5, 0);
+  back_wall.y_vec = make_float3(5, 0, 0);
+  back_wall.x_min = back_wall.y_min = 0;
+  back_wall.x_max = back_wall.y_max = 1;
+  
+  scene->objs.push_back(top_wall);
+  scene->objs.push_back(bot_wall);
+  scene->objs.push_back(left_wall);
+  scene->objs.push_back(right_wall);
+  scene->objs.push_back(front_wall);
+  scene->objs.push_back(back_wall);
+  return true;
+}
+
 class RadiosityApplication : public Application
 {
 public:
@@ -62,11 +126,6 @@ public:
 	} camera;
 };
 
-bool initialize_scene(Scene* scene) 
-{
-  return true;
-}
-
 bool RadiosityApplication::initialize()
 {
   bool rv = true;
@@ -80,9 +139,9 @@ bool RadiosityApplication::initialize()
   glClearColor( 0, 0, 0, 0 );
   glEnable( GL_BLEND );
   glEnable( GL_TEXTURE_2D );
-  // glGenTextures( 1, &texture );
-  // rv = rv && texture > 0;
-  // glBindTexture( GL_TEXTURE_2D, texture );
+  glGenTextures( 1, &texture );
+  rv = rv && texture > 0;
+  glBindTexture( GL_TEXTURE_2D, texture );
   glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
@@ -162,7 +221,7 @@ void RadiosityApplication::render()
 	render( color_data, WIDTH, HEIGHT, &cam );
 
   glClear( GL_COLOR_BUFFER_BIT );
-  // glBindTexture( GL_TEXTURE_2D, texture );
+  glBindTexture( GL_TEXTURE_2D, texture );
   glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, color_data );
   glBegin( GL_QUADS );
   glTexCoord2f( 0.0f, 0.0f );
