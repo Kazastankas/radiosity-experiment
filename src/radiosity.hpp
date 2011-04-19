@@ -46,6 +46,7 @@ struct Scene
 bool initialize_radiosity(Scene* scene);
 void render_image(uint8_t* color, size_t width, size_t height,
                   const Scene* scene, const Camera* camera);
-
+void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
+               const Scene* scene, size_t height);
 }
 

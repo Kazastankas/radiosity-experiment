@@ -11,6 +11,7 @@ namespace radiosity {
 
 bool initialize_radiosity(Scene* scene)
 {
+  return true;
   // TODO implement
 };
 
@@ -22,7 +23,7 @@ void render_image(uint8_t* color, size_t width, size_t height,
   float fovrad = camera->fov;
   
   v = camera->up;
-  w = -camera->direction;
+  w = -camera->dir;
   u = cross(v, w);
   
   n = 1;
@@ -30,7 +31,7 @@ void render_image(uint8_t* color, size_t width, size_t height,
   b = -t;
   l = b * camera->aspect_ratio;
   r = -l;
-  
+ 
   for (size_t i = 0; i < width; i++) {
     for (size_t j = 0; j < height; j++) {
       float u_s = l + (r - l) * i / width;
@@ -38,17 +39,20 @@ void render_image(uint8_t* color, size_t width, size_t height,
       float w_s = -n;
       
       float3 vray = normalize(u_s * u + v_s * v + w_s * w);
-      trace_ray(color, i, j, camera->position, vray, scene);
+      trace_ray(color, i, j, camera->pos, vray, scene, height);
     }
   }
 }
 
-void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir, const Scene* scene)
+void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
+               const Scene* scene, size_t height)
 {
-  size_t idx = 4 * (y * w_height + x);
-  size_t hit_idx = 0;
+  size_t idx = 4 * (y * height + x);
   float hit_time = std::numeric_limits<float>::infinity();
   
+  // reset
+  color[idx] = color[idx + 1] = color[idx + 2] = color[idx + 3] = 0;
+
   // Find the closest thing hit.
   for (size_t i = 0; i < scene->objs.size(); i++) {
     float3 p0 = scene->objs[i].corner_pos;
@@ -71,17 +75,15 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir, const
     float u_hit = dot(r2, pos - p0);
     float v_hit = dot(r3, pos - p0);
     
-    if (t_hit > hit_time ||
-        u_hit < scene->objs[i].x_min || u_hit > scene->objs[i].x_max ||
-        v_hit < scene->objs[i].y_min || v_hit > scene->objs[i].y_max)
+    if (t_hit > 0 && t_hit < hit_time &&
+        u_hit >= scene->objs[i].x_min && u_hit <= scene->objs[i].x_max &&
+        v_hit >= scene->objs[i].y_min && v_hit <= scene->objs[i].y_max)
     {
-      if (t_hit < hit_time) {
-        hit_idx = i;
-        color[idx] = scene->objs[i].color.x * 255;
-        color[idx + 1] = scene->objs[i].color.y * 255;
-        color[idx + 2] = scene->objs[i].color.z * 255;
-        color[idx + 3] = 255;
-      }
+      hit_time = t_hit;
+      color[idx] = scene->objs[i].color.x * 255;
+      color[idx + 1] = scene->objs[i].color.y * 255;
+      color[idx + 2] = scene->objs[i].color.z * 255;
+      color[idx + 3] = 255;
     }
   }
 }
