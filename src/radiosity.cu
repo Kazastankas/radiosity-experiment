@@ -110,4 +110,58 @@ float form_factor(Plane *p1, Plane *p2)
 	return ff;
 }
 
+__host__ __device__
+void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b)
+{
+	float acc = 0;
+	size_t dim = 10; //TODO: matrix dimensions
+
+	for(size_t jj = 0; jj < dim; jj++)
+	{
+		acc += M[ii*dim + jj] * x_0[jj];
+	}
+
+	x_1[ii] = (b[ii] - acc) / M[ii*dim + ii];
+}
+
+__global__
+void jacobi_GPU(float *x_0, float *x_1, float *M, float *b)
+{
+	size_t ii = blockIdx.x * blockDim.x + threadIdx.x;
+
+	//Check index
+	size_t dim = 10;
+	if(ii >= dim)
+		return;
+
+	jacobi(ii, x_0, x_1, M, b);
+}
+
+void jacobi_CPU(float *x_0, float *x_1, float *M, float *b)
+{
+	size_t dim = 10; //TODO: matrix dimensions
+	for(size_t ii = 0; ii < dim; ii++)
+	{
+		jacobi(ii, x_0, x_1, M, b);
+	}
+}
+
+__host__
+void solveRadiosity()
+{
+	size_t iters = 5;
+	float *M;
+	float *x_0;
+	float *x_1;
+	float *b;
+
+	for(size_t ii = 0; ii < iters; ii++)
+	{
+		jacobi_CPU(x_0, x_1, M, b);
+		jacobi_CPU(x_1, x_0, M, b);
+		//jacobi_GPU<<<>>>(x_0, x_1, M, b);
+		//jacobi_GPU<<<>>>(x_1, x_0, M, b);
+	}
+}
+
 }

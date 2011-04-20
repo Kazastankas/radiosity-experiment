@@ -24,8 +24,8 @@ static const float MIN_CAM_DIST = 1.0f;
 static const float CAM_ROTATE_SPEED = 5.0f;
 static const float CAM_MOVE_SPEED = 10.0f;
 
-static const int WIDTH = 64;
-static const int HEIGHT = 64;
+static const int WIDTH = 512;
+static const int HEIGHT = 512;
 static const double FPS = 60.0;
 static const char* TITLE = "Radiosity Renderer";
 
