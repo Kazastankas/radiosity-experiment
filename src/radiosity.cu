@@ -54,10 +54,10 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
   color[idx] = color[idx + 1] = color[idx + 2] = color[idx + 3] = 0;
 
   // Find the closest thing hit.
-  for (size_t i = 0; i < scene->objs.size(); i++) {
-    float3 p0 = scene->objs[i].corner_pos;
-    float3 p1 = p0 + scene->objs[i].x_vec;
-    float3 p2 = p0 + scene->objs[i].y_vec;
+  for (size_t i = 0; i < scene->patches.size(); i++) {
+    float3 p0 = scene->patches[i].corner_pos;
+    float3 p1 = p0 + scene->patches[i].x_vec;
+    float3 p2 = p0 + scene->patches[i].y_vec;
     
     // column vectors
     float3 c1 = -dir;
@@ -76,13 +76,13 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
     float v_hit = dot(r3, pos - p0);
     
     if (t_hit > 0 && t_hit < hit_time &&
-        u_hit >= scene->objs[i].x_min && u_hit <= scene->objs[i].x_max &&
-        v_hit >= scene->objs[i].y_min && v_hit <= scene->objs[i].y_max)
+        u_hit >= scene->patches[i].x_min && u_hit <= scene->patches[i].x_max &&
+        v_hit >= scene->patches[i].y_min && v_hit <= scene->patches[i].y_max)
     {
       hit_time = t_hit;
-      color[idx] = scene->objs[i].color.x * 255;
-      color[idx + 1] = scene->objs[i].color.y * 255;
-      color[idx + 2] = scene->objs[i].color.z * 255;
+      color[idx] = scene->patches[i].color.x * 255;
+      color[idx + 1] = scene->patches[i].color.y * 255;
+      color[idx + 2] = scene->patches[i].color.z * 255;
       color[idx + 3] = 255;
     }
   }

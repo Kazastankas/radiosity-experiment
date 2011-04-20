@@ -12,5 +12,5 @@ CUDA_SRCS = \
 	radiosity.cu
 
 COMPILER_FLAGS =
-LINK_LIBRARIES = -lGL -lSDLmain -lSDL -lpng -lz -lcudart
+LINK_LIBRARIES = -lGL -lGLU -lSDLmain -lSDL -lpng -lz -lcudart
 
