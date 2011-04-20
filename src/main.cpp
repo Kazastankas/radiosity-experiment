@@ -46,6 +46,9 @@ public:
 
 	uint8_t* color_data;
   Scene scene_data;
+  float *rad_matrix;
+  size_t matrix_dim;
+  GLuint texture;
 
 	struct {
 		KeyDir horz;
@@ -71,18 +74,17 @@ bool RadiosityApplication::initialize()
 	memset( color_data, 0, WIDTH*HEIGHT*4 );
 
 	rv = rv && initialize_scene(&scene_data);
-	rv = rv && initialize_radiosity(&scene_data);
+	rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
 
   glClearColor( 0, 0, 0, 0 );
   glEnable( GL_BLEND );
   glEnable( GL_TEXTURE_2D );
   glEnable( GL_DEPTH_TEST );
-
+  
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
   glMatrixMode( GL_MODELVIEW );
@@ -106,6 +108,7 @@ bool RadiosityApplication::initialize()
 void RadiosityApplication::destroy()
 {
 	delete [] color_data;
+	delete [] rad_matrix;
 }
 
 void RadiosityApplication::update( double dt )
@@ -183,11 +186,9 @@ void RadiosityApplication::render()
   //Set camera parameters
   gluLookAt( cam.pos.x, cam.pos.y, cam.pos.z,
              cam.dir.x, cam.dir.y, cam.dir.z,
-			 cam.up.x,  cam.up.y,  cam.up.z);
+			       cam.up.x,  cam.up.y,  cam.up.z);
 
 	draw_scene(&scene_data);
-//	render_image(color_data, WIDTH, HEIGHT, &scene_data, &cam);
-
 }
 
 void RadiosityApplication::handle_event( const SDL_Event& event )
