@@ -6,7 +6,6 @@
  */
 
 #include "scene.hpp"
-#include "radiosity.hpp"
 #include "application.hpp"
 #include "cutil_math.hpp"
 #include <SDL/SDL_opengl.h>

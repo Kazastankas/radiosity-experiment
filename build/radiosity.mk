@@ -5,6 +5,7 @@ TARGET_TYPE = executable
 SRCS = \
 	imageio.cpp \
 	application.cpp \
+	scene.cpp \
 	main.cpp
 
 CUDA_SRCS = \
