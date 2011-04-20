@@ -87,8 +87,27 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
     }
   }
 }
-            
+
+//Calculate the form factor between two planes
+float form_factor(Plane *p1, Plane *p2)
+{
+	float3 p1_norm = cross(p1->x_vec, p1->y_vec);
+	float3 p2_norm = cross(p2->x_vec, p2->y_vec);
+	float a1 = length(p1_norm);
+	float a2 = length(p2_norm);
+
+	float3 btwn = p1->corner_pos - p2->corner_pos;
+	float  dist = length(btwn);
+
+	btwn    = normalize(btwn);
+	p1_norm = normalize(p1_norm);
+	p2_norm = normalize(p2_norm);
+
+	float dTheta = dot(btwn, p1_norm) * dot(btwn, p2_norm);
+	float dArea  = a1*a2;
+	float ff = dTheta * dArea / (dist * dist * PI);
+
+	return ff;
 }
 
-
-
+}

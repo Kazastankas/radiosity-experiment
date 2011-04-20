@@ -1,4 +1,4 @@
-#include <radiosity.hpp>
+#include "radiosity.hpp"
 
 #define SPLIT_UNIT 0.1f
 #define MATERIAL_REFLECTIVITY 0.74f
