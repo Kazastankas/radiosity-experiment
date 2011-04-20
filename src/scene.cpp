@@ -1,4 +1,7 @@
 #include "radiosity.hpp"
+#include "cutil_math.hpp"
+#include <SDL/SDL_opengl.h>
+#include <vector>
 
 #define SPLIT_UNIT 0.1f
 #define MATERIAL_REFLECTIVITY 0.74f
@@ -293,6 +296,32 @@ bool initialize_scene(Scene* scene)
   }
   
   return true;
+}
+
+
+void draw_plane(Plane *p)
+{
+	float3 point1 = p->corner_pos;
+	float3 point2 = p->corner_pos + p->x_vec;
+	float3 point3 = p->corner_pos + p->x_vec + p->y_vec;
+	float3 point4 = p->corner_pos + p->y_vec;
+
+	glBegin(GL_QUADS);
+
+	glColor3f(p->color.x, p->color.y, p->color.z);
+	glVertex3f(point1.x, point1.y, point1.z);
+	glVertex3f(point2.x, point2.y, point2.z);
+	glVertex3f(point3.x, point3.y, point3.z);
+	glVertex3f(point4.x, point4.y, point4.z);
+
+	glEnd();
+}
+
+void draw_scene(Scene *s)
+{
+	std::vector<Plane>::iterator it;
+	for(it=s->planes.begin(); it < s->planes.end(); it++)
+		draw_plane(&(*it)); // Somehow not the same as draw_plane(it);  :(
 }
 
 }

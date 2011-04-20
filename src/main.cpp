@@ -8,6 +8,8 @@
 #include "scene.hpp"
 #include "application.hpp"
 #include "cutil_math.hpp"
+#include <GL/gl.h>
+#include <GL/glu.h>
 #include <SDL/SDL_opengl.h>
 #include <stdio.h>
 
@@ -44,7 +46,6 @@ public:
 
 	uint8_t* color_data;
   Scene scene_data;
-  GLuint texture;
 
 	struct {
 		KeyDir horz;
@@ -75,17 +76,15 @@ bool RadiosityApplication::initialize()
   glClearColor( 0, 0, 0, 0 );
   glEnable( GL_BLEND );
   glEnable( GL_TEXTURE_2D );
-  glGenTextures( 1, &texture );
-  rv = rv && texture > 0;
-  glBindTexture( GL_TEXTURE_2D, texture );
-  glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+  glEnable( GL_DEPTH_TEST );
+
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
   glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
   glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
-  glOrtho( 0, 1, 0, 1, -1, 1 );
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity();
 
@@ -164,27 +163,31 @@ void RadiosityApplication::render()
 
   float3 camdir = -make_float3( cos(camera.theta)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
   cam.pos = camera.position;
-  // cam.pos = -normalize(camdir) * 2.0f + CAM_POS;
   cam.dir = camdir;
   cam.up = cross( cross( camdir, make_float3( 0, 1, 0 ) ), camdir );
   cam.fov = camera.fov;
   cam.aspect_ratio = camera.aspect;
 
-	render_image(color_data, WIDTH, HEIGHT, &scene_data, &cam);
+  glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-  glClear( GL_COLOR_BUFFER_BIT );
-  glBindTexture( GL_TEXTURE_2D, texture );
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, color_data );
-  glBegin( GL_QUADS );
-  glTexCoord2f( 0.0f, 0.0f );
-  glVertex2f( 0.0f, 0.0f );
-  glTexCoord2f( 1.0f, 0.0f );
-  glVertex2f( 1.0f, 0.0f );
-  glTexCoord2f( 1.0f, 1.0f );
-  glVertex2f( 1.0f, 1.0f );
-  glTexCoord2f( 0.0f, 1.0f );
-  glVertex2f( 0.0f, 1.0f );
-  glEnd();
+  glMatrixMode( GL_PROJECTION );
+  glLoadIdentity();
+  gluPerspective(cam.fov * 180.0 / PI,
+				 cam.aspect_ratio,
+				 0.01f,
+				 100.0f);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  //Set camera parameters
+  gluLookAt( cam.pos.x, cam.pos.y, cam.pos.z,
+             cam.dir.x, cam.dir.y, cam.dir.z,
+			 cam.up.x,  cam.up.y,  cam.up.z);
+
+	draw_scene(&scene_data);
+//	render_image(color_data, WIDTH, HEIGHT, &scene_data, &cam);
+
 }
 
 void RadiosityApplication::handle_event( const SDL_Event& event )
