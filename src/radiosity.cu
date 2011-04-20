@@ -8,53 +8,19 @@ namespace radiosity {
 
 #define PI 3.14159265358979f
 
-
-bool initialize_radiosity(Scene* scene)
+float visible(Scene* scene, size_t src, size_t dst) 
 {
-  return true;
-  // TODO implement
-};
 
-void render_image(uint8_t* color, size_t width, size_t height,
-                  const Scene* scene, const Camera* camera)
-{
-  float3 v, w, u;
-  float l, r, b, t, n;
-  float fovrad = camera->fov;
-  
-  v = camera->up;
-  w = -camera->dir;
-  u = cross(v, w);
-  
-  n = 1;
-  t = tan(fovrad / 2.0f) * n;
-  b = -t;
-  l = b * camera->aspect_ratio;
-  r = -l;
- 
-  for (size_t i = 0; i < width; i++) {
-    for (size_t j = 0; j < height; j++) {
-      float u_s = l + (r - l) * i / width;
-      float v_s = b + (t - b) * j / height;
-      float w_s = -n;
-      
-      float3 vray = normalize(u_s * u + v_s * v + w_s * w);
-      trace_ray(color, i, j, camera->pos, vray, scene, height);
-    }
-  }
-}
+  float3 pos = scene->patches[src].corner_pos;
+  float3 dir = scene->patches[dst].corner_pos -
+               scene->patches[src].corner_pos;
+  float hit_time = length(dir);
+  dir = normalize(dir);
 
-void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
-               const Scene* scene, size_t height)
-{
-  size_t idx = 4 * (y * height + x);
-  float hit_time = std::numeric_limits<float>::infinity();
-  
-  // reset
-  color[idx] = color[idx + 1] = color[idx + 2] = color[idx + 3] = 0;
-
-  // Find the closest thing hit.
+  // Check versus everything else, see if something else gets hit first.
   for (size_t i = 0; i < scene->patches.size(); i++) {
+    if (i == src || i == dst) continue;
+
     float3 p0 = scene->patches[i].corner_pos;
     float3 p1 = p0 + scene->patches[i].x_vec;
     float3 p2 = p0 + scene->patches[i].y_vec;
@@ -75,17 +41,46 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
     float u_hit = dot(r2, pos - p0);
     float v_hit = dot(r3, pos - p0);
     
+    // We've hit something else first, abort!
     if (t_hit > 0 && t_hit < hit_time &&
         u_hit >= scene->patches[i].x_min && u_hit <= scene->patches[i].x_max &&
         v_hit >= scene->patches[i].y_min && v_hit <= scene->patches[i].y_max)
     {
-      hit_time = t_hit;
-      color[idx] = scene->patches[i].color.x * 255;
-      color[idx + 1] = scene->patches[i].color.y * 255;
-      color[idx + 2] = scene->patches[i].color.z * 255;
-      color[idx + 3] = 255;
+      return false;
     }
   }
+
+  return true;
+}
+
+
+bool initialize_radiosity(Scene* scene, float* matrix, size_t* matrix_dim)
+{
+  size_t dim = scene->patches.size();
+  *matrix_dim = dim;
+  
+  matrix = new float[dim * dim];
+
+  return calc_radiosity(scene, matrix, dim);
+}
+
+bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
+{
+  for (size_t x = 0; x < dim; x++) {
+    if (x % 32 == 0) {
+      printf("Starting row %d\n", x);
+    }
+    for (size_t y = 0; y < x; y++) {
+      bool v = visible(scene, x, y);
+      if (!v) continue;
+
+      float ff = form_factor(&scene->patches[y], &scene->patches[x]);
+      matrix[y * dim + x] = -ff * scene->patches[x].reflectance;
+      matrix[x * dim + y] = -ff * scene->patches[y].reflectance;
+    }
+    matrix[x * dim + x] = 1.0f;
+  }
+  return true;
 }
 
 //Calculate the form factor between two planes
@@ -104,7 +99,8 @@ float form_factor(Plane *p1, Plane *p2)
 	p2_norm = normalize(p2_norm);
 
 	float dTheta = dot(btwn, p1_norm) * dot(btwn, p2_norm);
-	float dArea  = a1*a2;
+	// since we effectively divide by a1 at the end, only take on a2
+  float dArea  = a2;
 	float ff = dTheta * dArea / (dist * dist * PI);
 
 	return ff;
