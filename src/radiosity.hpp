@@ -31,13 +31,14 @@ struct Plane
     float y_max;
     float emission;
     float reflectance;
-    float energy = 1;
+    float energy;
 };
 
 // Contains all state, perhaps also the data we calculate.
 struct Scene
 {
-    std::vector<Plane> objs;
+    std::vector<Plane> planes;
+    std::vector<Plane> patches;
 };
 
 bool initialize_radiosity(Scene* scene);
