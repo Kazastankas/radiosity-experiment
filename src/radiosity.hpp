@@ -44,11 +44,9 @@ struct Scene
     std::vector<Plane> patches;
 };
 
-bool initialize_radiosity(Scene* scene);
-void render_image(uint8_t* color, size_t width, size_t height,
-                  const Scene* scene, const Camera* camera);
-void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
-               const Scene* scene, size_t height);
+bool initialize_radiosity(Scene* scene, float* matrix, size_t* matrix_dim);
+bool calc_radiosity(Scene* scene, float* matrix, size_t dim);
+float form_factor(Plane *p1, Plane *p2);
 }
 
 #endif

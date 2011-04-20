@@ -3,7 +3,7 @@
 #include <SDL/SDL_opengl.h>
 #include <vector>
 
-#define SPLIT_UNIT 0.1f
+#define SPLIT_UNIT 1.0f
 #define MATERIAL_REFLECTIVITY 0.74f
 #define GLOBAL_ENERGY 1.0f
 
