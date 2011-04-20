@@ -17,11 +17,10 @@ namespace radiosity {
 
 static const SDLKey KEY_SCREENSHOT = SDLK_f;
 static const float MIN_CAM_PHI = PI / 8.0f;
-static const float MAX_CAM_PHI = 7.0f * PI / 16.0f;
+static const float MAX_CAM_PHI = PI;
 static const float MIN_CAM_DIST = 1.0f;
-static const float CAM_ROTATE_SPEED = 0.4f;
-static const float CAM_ZOOM_SPEED = 10.0f;
-static const float3 CAM_POS = make_float3( 0, 0, 0 );
+static const float CAM_ROTATE_SPEED = 5.0f;
+static const float CAM_MOVE_SPEED = 10.0f;
 
 static const int WIDTH = 64;
 static const int HEIGHT = 64;
@@ -141,15 +140,16 @@ public:
 	struct {
 		KeyDir horz;
 		KeyDir vert;
-		KeyDir zoom;
+		KeyDir move_horz;
+		KeyDir move_vert;
 	} keys;
 
 	struct {
 		float fov;
 		float aspect;
-		float distance;
 		float theta;
 		float phi;
+        float3 position;
 	} camera;
 };
 
@@ -180,16 +180,17 @@ bool RadiosityApplication::initialize()
   glMatrixMode( GL_MODELVIEW );
   glLoadIdentity();
 
-	camera.distance = 80.0f;
 	camera.theta = 0.0f;
 	camera.phi = 3.14f / 6.0f;
+	camera.position = make_float3( 0, 0, 0 );
 
   camera.fov = (PI / 180.0f) * 64.0f;
   camera.aspect = (float)WIDTH / (float)HEIGHT;
 
 	keys.horz = KD_ZERO;
 	keys.vert = KD_ZERO;
-	keys.zoom = KD_ZERO;
+	keys.move_horz = KD_ZERO;
+	keys.move_vert = KD_ZERO;
 
   return rv;
 }
@@ -203,10 +204,10 @@ void RadiosityApplication::update( double dt )
 {
 	switch ( keys.horz ) {
 	case KD_NEG:
-		camera.theta = fmod( camera.theta + CAM_ROTATE_SPEED * dt, 2*PI );
+		camera.theta = fmod( camera.theta - CAM_ROTATE_SPEED * dt, 2*PI );
 		break;
 	case KD_POS:
-		camera.theta = fmod( camera.theta - CAM_ROTATE_SPEED * dt, 2*PI );
+		camera.theta = fmod( camera.theta + CAM_ROTATE_SPEED * dt, 2*PI );
 		break;
 	default:
 		break;
@@ -223,12 +224,25 @@ void RadiosityApplication::update( double dt )
 		break;
 	}
 
-	switch ( keys.zoom ) {
+  	float3 sidedir = -make_float3( cos(camera.theta + PI/2.0)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
+	switch ( keys.move_horz ) {
 	case KD_NEG:
-		camera.distance += CAM_ZOOM_SPEED * dt;
+		camera.position -= CAM_MOVE_SPEED * dt * sidedir;
 		break;
 	case KD_POS:
-		camera.distance = fmax( MIN_CAM_DIST, camera.distance - CAM_ZOOM_SPEED * dt );
+		camera.position += CAM_MOVE_SPEED * dt * sidedir;
+		break;
+	default:
+		break;
+	}
+
+  	float3 camdir = -make_float3( cos(camera.theta)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
+	switch ( keys.move_vert ) {
+	case KD_NEG:
+		camera.position -= CAM_MOVE_SPEED * dt * camdir;
+		break;
+	case KD_POS:
+		camera.position += CAM_MOVE_SPEED * dt * camdir;
 		break;
 	default:
 		break;
@@ -240,7 +254,7 @@ void RadiosityApplication::render()
 	Camera cam;
 
   float3 camdir = -make_float3( cos(camera.theta)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
-  cam.pos = CAM_POS;
+  cam.pos = camera.position;
   // cam.pos = -normalize(camdir) * 2.0f + CAM_POS;
   cam.dir = camdir;
   cam.up = cross( cross( camdir, make_float3( 0, 1, 0 ) ), camdir );
@@ -275,27 +289,35 @@ void RadiosityApplication::handle_event( const SDL_Event& event )
       case KEY_SCREENSHOT:
           take_screenshot();
           break;
-  case SDLK_a:
+  //Camera look
   case SDLK_LEFT:
     keys.horz = KD_NEG;
     break;
-  case SDLK_d:
   case SDLK_RIGHT:
     keys.horz = KD_POS;
     break;
-  case SDLK_s:
   case SDLK_DOWN:
-    keys.zoom = KD_NEG;
-    break;
-  case SDLK_w:
-  case SDLK_UP:
-    keys.zoom = KD_POS;
-    break;
-  case SDLK_q:
     keys.vert = KD_NEG;
     break;
-  case SDLK_e:
+  case SDLK_UP:
     keys.vert = KD_POS;
+    break;
+  //Camera move
+  case SDLK_c:
+  case SDLK_w:
+    keys.move_vert = KD_POS;
+    break;
+  case SDLK_t:
+  case SDLK_s:
+    keys.move_vert = KD_NEG;
+    break;
+  case SDLK_h:
+  case SDLK_a:
+    keys.move_horz = KD_NEG;
+    break;
+  case SDLK_n:
+  case SDLK_d:
+    keys.move_horz = KD_POS;
     break;
       default:
           break;
@@ -304,33 +326,43 @@ void RadiosityApplication::handle_event( const SDL_Event& event )
   case SDL_KEYUP:
       switch ( event.key.keysym.sym )
       {
-  case SDLK_a:
+  //Camera look
   case SDLK_LEFT:
     if ( keys.horz == KD_NEG )
       keys.horz = KD_ZERO;
     break;
-  case SDLK_d:
   case SDLK_RIGHT:
     if ( keys.horz == KD_POS )
       keys.horz = KD_ZERO;
     break;
-  case SDLK_s:
   case SDLK_DOWN:
-    if ( keys.zoom == KD_NEG )
-      keys.zoom = KD_ZERO;
-    break;
-  case SDLK_w:
-  case SDLK_UP:
-    if ( keys.zoom == KD_POS )
-      keys.zoom = KD_ZERO;
-    break;
-  case SDLK_q:
     if ( keys.vert == KD_NEG )
       keys.vert = KD_ZERO;
     break;
-  case SDLK_e:
+  case SDLK_UP:
     if ( keys.vert == KD_POS )
       keys.vert = KD_ZERO;
+    break;
+  //Camera move
+  case SDLK_c:
+  case SDLK_w:
+    if ( keys.move_vert == KD_POS )
+      keys.move_vert = KD_ZERO;
+    break;
+  case SDLK_t:
+  case SDLK_s:
+    if ( keys.move_vert == KD_NEG )
+      keys.move_vert = KD_ZERO;
+    break;
+  case SDLK_h:
+  case SDLK_a:
+    if ( keys.move_horz == KD_NEG )
+      keys.move_horz = KD_ZERO;
+    break;
+  case SDLK_n:
+  case SDLK_d:
+    if ( keys.move_horz == KD_POS )
+      keys.move_horz = KD_ZERO;
     break;
       default:
           break;
