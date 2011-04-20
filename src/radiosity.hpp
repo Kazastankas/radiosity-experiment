@@ -1,3 +1,6 @@
+#ifndef RADIOSITY_H
+#define RADIOSITY_H
+
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include <vector>
@@ -50,3 +53,4 @@ void trace_ray(uint8_t* color, size_t x, size_t y, float3 pos, float3 dir,
                const Scene* scene, size_t height);
 }
 
+#endif
