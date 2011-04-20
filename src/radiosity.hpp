@@ -17,6 +17,8 @@ struct Camera
 
 // A plane is determined by a corner of origin, two vectors, and
 // ranges dictating a rectangle (if any ranges exist). Each plane has a color.
+// They now also have reflectance and natural emission. Lights are just planes
+// with emissive properties.
 struct Plane
 {
     float3 corner_pos;
@@ -27,20 +29,15 @@ struct Plane
     float x_max;
     float y_min;
     float y_max;
-};
-
-// A light is determined by a position and maybe a color? xyz -> rgb.
-struct Light
-{
-    float3 pos;
-    float3 color;
+    float emission;
+    float reflectance;
+    float energy = 1;
 };
 
 // Contains all state, perhaps also the data we calculate.
 struct Scene
 {
     std::vector<Plane> objs;
-    std::vector<Light> lights;
 };
 
 bool initialize_radiosity(Scene* scene);
