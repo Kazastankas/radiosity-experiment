@@ -3,7 +3,7 @@
 #include <SDL/SDL_opengl.h>
 #include <vector>
 
-#define SPLIT_UNIT 2.0f
+#define SPLIT_UNIT 1.0f
 #define MATERIAL_REFLECTIVITY 0.74f
 #define GLOBAL_ENERGY 0.0f
 
@@ -13,14 +13,14 @@ bool initialize_scene(Scene* scene)
 {
   // planes
   Plane outside_light;
-  outside_light.corner_pos = make_float3(-1, -1, 10);
+  outside_light.corner_pos = make_float3(-1, -1, 5);
   outside_light.color = make_float3(1, 1, 1);
   outside_light.x_vec = make_float3(1, 0, 0);
   outside_light.y_vec = make_float3(0, 1, 0);
   outside_light.x_min = outside_light.y_min = 0;
   outside_light.x_max = outside_light.y_max = 1;
-  outside_light.emission = 1;
-  outside_light.reflectance = 0;
+  outside_light.emission = 100;
+  outside_light.reflectance = MATERIAL_REFLECTIVITY;
   outside_light.energy = GLOBAL_ENERGY;
   
   Plane top_wall;
@@ -138,13 +138,13 @@ bool initialize_scene(Scene* scene)
     for (int y = 0; y < (int) (2.0f / SPLIT_UNIT); y++) {
       Plane outside_light;
       outside_light.corner_pos = make_float3(((float) x * SPLIT_UNIT) - 1.0f,
-                                             ((float) y * SPLIT_UNIT) - 1.0f, 10);
+                                             ((float) y * SPLIT_UNIT) - 1.0f, 5);
       outside_light.color = make_float3(1, 1, 1);
       outside_light.x_vec = make_float3(SPLIT_UNIT, 0, 0);
       outside_light.y_vec = make_float3(0, SPLIT_UNIT, 0);
       outside_light.x_min = outside_light.y_min = 0;
       outside_light.x_max = outside_light.y_max = 1;
-      outside_light.emission = 1;
+      outside_light.emission = 100;
       outside_light.reflectance = 0;
       outside_light.energy = GLOBAL_ENERGY;
       scene->patches.push_back(outside_light);

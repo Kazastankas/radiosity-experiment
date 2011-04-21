@@ -63,11 +63,14 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
     }
     for (size_t y = 0; y < x; y++) {
       bool v = visible(scene, x, y);
-      if (!v) continue;
+      if (!v) {
+        matrix[y * dim + x] = matrix[x * dim + y] = 0.0f;
+        continue;
+      }
 
       float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[x].reflectance;
-      matrix[x * dim + y] = -ff * scene->patches[y].reflectance;
+      matrix[y * dim + x] = -ff * scene->patches[y].reflectance;
+      matrix[x * dim + y] = -ff * scene->patches[x].reflectance;
     }
     matrix[x * dim + x] = 1.0f;
   }
@@ -77,7 +80,7 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
   float *sol_1    = new float[dim];
   for(size_t ii = 0; ii < dim; ii++)
   {
-    energies[ii] = scene->patches[ii].energy;
+    energies[ii] = scene->patches[ii].emission;
     sol_0[ii] = energies[ii];
     sol_1[ii] = energies[ii];
   }
@@ -88,9 +91,10 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
   //Populate patches with solved colors
   for(size_t x = 0; x < dim; x++)
   {
-	scene->patches[x].color = sol_1[x] * scene->patches[x].color;
+    //printf("%f ", sol_1[x]);
+    scene->patches[x].color = sol_1[x] * scene->patches[x].color;
   }
-
+  printf("\n");
   return true;
 }
 
@@ -115,7 +119,7 @@ float form_factor(Plane *p1, Plane *p2)
   float dArea  = a2;
 	float ff = dTheta * dArea / (dist * dist * PI);
 
-	return ff;
+  return ff;
 }
 
 __host__ //__device__
@@ -123,12 +127,15 @@ void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b, size_t dim)
 {
 	float acc = 0;
 
+	  
 	for(size_t jj = 0; jj < dim; jj++)
 	{
+    if (ii == jj) continue;
 		acc += M[ii*dim + jj] * x_0[jj];
-		if(ii == 0) printf("M: %f x_0: %f acc: %f    %d %d %d\n", M[ii*dim + jj], x_0[jj], acc, ii, jj, dim);
-	}
+    //printf("(%d,%d)%f*%f ", jj, ii, M[ii*dim + jj], x_0[jj]);
+  }
 
+  //printf("\naccum for x = %d is %f\n", ii, acc);
 	x_1[ii] = b[ii] - acc;  // (b[ii]- acc) / M[ii*dim + ii];
 }
 
@@ -155,7 +162,7 @@ void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 __host__
 void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 {
-	size_t iters = 1;
+	size_t iters = 100;
 
 	for(size_t ii = 0; ii < iters; ii++)
 	{
