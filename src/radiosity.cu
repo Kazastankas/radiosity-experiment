@@ -54,7 +54,7 @@ float visible(Scene* scene, size_t src, size_t dst)
 }
 
 
-bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
+bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
 {
   //Populate energy-transfer matrix
   for (size_t x = 0; x < dim; x++) {
@@ -64,23 +64,23 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
     for (size_t y = 0; y < x; y++) {
       bool v = visible(scene, x, y);
       if (!v) {
-        matrix[y * dim + x] = matrix[x * dim + y] = 0.0f;
+        matrix[y * dim + x] = matrix[x * dim + y] = make_float3(0.0f);
         continue;
       }
 
       float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].reflectance;
-      matrix[x * dim + y] = -ff * scene->patches[x].reflectance;
+      matrix[y * dim + x] = -ff * scene->patches[y].color; //reflectance;
+      matrix[x * dim + y] = -ff * scene->patches[x].color; //reflectance;
     }
-    matrix[x * dim + x] = 1.0f;
+    matrix[x * dim + x] = make_float3(1.0f);
   }
   //Populate initial state
-  float *energies = new float[dim];
-  float *sol_0    = new float[dim];
-  float *sol_1    = new float[dim];
+  float3 *energies = new float3[dim];
+  float3 *sol_0    = new float3[dim];
+  float3 *sol_1    = new float3[dim];
   for(size_t ii = 0; ii < dim; ii++)
   {
-    energies[ii] = scene->patches[ii].emission;
+    energies[ii] = make_float3(scene->patches[ii].emission);
     sol_0[ii] = energies[ii];
     sol_1[ii] = energies[ii];
   }
@@ -119,13 +119,13 @@ float form_factor(Plane *p1, Plane *p2)
   float dArea  = a2;
 	float ff = dTheta * dArea / (dist * dist * PI);
 
-  return ff;
+  return (ff > 0) ? ff : -ff;
 }
 
 __host__ __device__
-void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b, size_t dim)
+void jacobi(size_t ii, float3 *x_0, float3 *x_1, float3 *M, float3* b, size_t dim)
 {
-	float acc = 0;
+	float3 acc = make_float3(0.0f);
 
 	for(size_t jj = 0; jj < dim; jj++)
 	{
@@ -137,7 +137,7 @@ void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b, size_t dim)
 }
 
 __global__
-void jacobi_GPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
+void jacobi_GPU(float3 *x_0, float3 *x_1, float3 *M, float3 *b, size_t dim)
 {
 	size_t ii = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -148,7 +148,7 @@ void jacobi_GPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 	jacobi(ii, x_0, x_1, M, b, dim);
 }
 
-void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
+void jacobi_CPU(float3 *x_0, float3 *x_1, float3 *M, float3 *b, size_t dim)
 {
 	for(size_t ii = 0; ii < dim; ii++)
 	{
@@ -157,7 +157,7 @@ void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 }
 
 __host__
-void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
+void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t dim)
 {
 	size_t iters = 100;
 
@@ -167,16 +167,16 @@ void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 	blocks += ((threads % threadsPerBlock) > 0) ? 1 : 0;
 
 	//Copy data to GPU:
-	float *Mg, *bg, *sol_0g, *sol_1g;
-	cudaMalloc((void **) &Mg, dim * dim * sizeof(float));
-	cudaMalloc((void **) &bg, dim * sizeof(float));
-	cudaMalloc((void **) &sol_0g, dim * sizeof(float));
-	cudaMalloc((void **) &sol_1g, dim * sizeof(float));
+	float3 *Mg, *bg, *sol_0g, *sol_1g;
+	cudaMalloc((void **) &Mg, dim * dim * sizeof(float3));
+	cudaMalloc((void **) &bg, dim * sizeof(float3));
+	cudaMalloc((void **) &sol_0g, dim * sizeof(float3));
+	cudaMalloc((void **) &sol_1g, dim * sizeof(float3));
 
-	cudaMemcpy(Mg, M, dim*dim * sizeof(float),     cudaMemcpyHostToDevice);
-	cudaMemcpy(bg, b, dim * sizeof(float),         cudaMemcpyHostToDevice);
-	cudaMemcpy(sol_0g, sol_0, dim * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(sol_1g, sol_1, dim * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(Mg, M, dim*dim * sizeof(float3),     cudaMemcpyHostToDevice);
+	cudaMemcpy(bg, b, dim * sizeof(float3),         cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_0g, sol_0, dim * sizeof(float3), cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_1g, sol_1, dim * sizeof(float3), cudaMemcpyHostToDevice);
 
 	for(size_t ii = 0; ii < iters; ii++)
 	{
@@ -187,7 +187,7 @@ void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 	}
 
 	//Copy data back to CPU:
-	cudaMemcpy(sol_1, sol_1g, dim * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(sol_1, sol_1g, dim * sizeof(float3), cudaMemcpyDeviceToHost);
 }
 
 }
