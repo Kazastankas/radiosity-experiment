@@ -7,22 +7,23 @@ namespace radiosity {
 
 #define PI 3.14159265358979f
 
-bool visible(Scene* scene, size_t src, size_t dst) 
+__host__ __device__
+bool visible(Plane* patches, size_t src, size_t dst, size_t dim) 
 {
 
-  float3 pos = scene->patches[src].corner_pos;
-  float3 dir = scene->patches[dst].corner_pos -
-               scene->patches[src].corner_pos;
+  float3 pos = patches[src].corner_pos;
+  float3 dir = patches[dst].corner_pos -
+               patches[src].corner_pos;
   float hit_time = length(dir);
   dir = normalize(dir);
 
   // Check versus everything else, see if something else gets hit first.
-  for (size_t i = 0; i < scene->patches.size(); i++) {
+  for (size_t i = 0; i < dim; i++) {
     if (i == src || i == dst) continue;
 
-    float3 p0 = scene->patches[i].corner_pos;
-    float3 p1 = p0 + scene->patches[i].x_vec;
-    float3 p2 = p0 + scene->patches[i].y_vec;
+    float3 p0 = patches[i].corner_pos;
+    float3 p1 = p0 + patches[i].x_vec;
+    float3 p2 = p0 + patches[i].y_vec;
     
     // column vectors
     float3 c1 = -dir;
@@ -42,8 +43,8 @@ bool visible(Scene* scene, size_t src, size_t dst)
     
     // We've hit something else first, abort!
     if (t_hit > 0 && t_hit < hit_time &&
-        u_hit >= scene->patches[i].x_min && u_hit <= scene->patches[i].x_max &&
-        v_hit >= scene->patches[i].y_min && v_hit <= scene->patches[i].y_max)
+        u_hit >= patches[i].x_min && u_hit <= patches[i].x_max &&
+        v_hit >= patches[i].y_min && v_hit <= patches[i].y_max)
     {
       return false;
     }
@@ -52,27 +53,57 @@ bool visible(Scene* scene, size_t src, size_t dst)
   return true;
 }
 
+__global__
+void build_matrix(Plane *patches, float3 *M, size_t dim)
+{
+	size_t xx = blockIdx.x * blockDim.x + threadIdx.x;
+	size_t yy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if(xx >= dim || yy >= dim)
+		return;
+
+	if(xx == yy)
+	{
+    	M[xx * dim + xx] = make_float3(1.0f);
+	}
+	else
+	{
+      bool v   = visible(patches, xx, yy, dim);
+      float ff = form_factor(&patches[yy], &patches[xx]);
+
+      M[yy * dim + xx] = v * -ff * patches[yy].color;
+      M[xx * dim + yy] = v * -ff * patches[xx].color;
+	}
+}
 
 bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
 {
-  //Populate energy-transfer matrix
-  for (size_t x = 0; x < dim; x++) {
-    if (x % 32 == 0) {
-      printf("Starting row %d\n", x);
-    }
-    for (size_t y = 0; y < x; y++) {
-      bool v = visible(scene, x, y);
-      if (!v) {
-        matrix[y * dim + x] = matrix[x * dim + y] = make_float3(0.0f);
-        continue;
-      }
+  float3 *Mg, *bg, *sol_0g, *sol_1g;
+	cudaMalloc((void **) &Mg, dim * dim * sizeof(float3));
+	cudaMalloc((void **) &bg, dim * sizeof(float3));
+	cudaMalloc((void **) &sol_0g, dim * sizeof(float3));
+	cudaMalloc((void **) &sol_1g, dim * sizeof(float3));
 
-      float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].color;
-      matrix[x * dim + y] = -ff * scene->patches[x].color;
-    }
-    matrix[x * dim + x] = make_float3(1.0f);
+  //Copy scene data
+  Plane *patches, *temp;
+	cudaMalloc((void **) &patches, dim * sizeof(Plane));
+  temp = new Plane[dim];
+  for(size_t ii = 0; ii < dim; ii++)
+  {
+	temp[ii] = scene->patches[ii];
   }
+  cudaMemcpy(patches, temp, dim * sizeof(Plane), cudaMemcpyHostToDevice);
+
+  //Populate energy-transfer matrix
+	size_t threadsPerBlock = 256;
+	size_t threads = dim;
+	size_t blocks  = threads / threadsPerBlock;
+	blocks += ((threads % threadsPerBlock) > 0) ? 1 : 0;
+
+  cudaMemcpy(Mg, matrix, dim*dim * sizeof(float3),     cudaMemcpyHostToDevice);
+  build_matrix<<<blocks, threads>>>(patches, Mg, dim);
+
+
   //Populate initial state
   float3 *energies = new float3[dim];
   float3 *sol_0    = new float3[dim];
@@ -83,19 +114,24 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
     sol_0[ii] = energies[ii];
     sol_1[ii] = energies[ii];
   }
+
+	cudaMemcpy(bg,     energies, dim * sizeof(float3), cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_0g, sol_0,    dim * sizeof(float3), cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_1g, sol_1,    dim * sizeof(float3), cudaMemcpyHostToDevice);
   
   //Solve, then populate textures
-  solve_radiosity(matrix, energies, sol_0, sol_1, dim);
-
-  //Populate patches with solved colors
+  solve_radiosity(Mg, bg, sol_0g, sol_1g, dim);
+  cudaMemcpy(sol_1g, sol_1, dim * sizeof(float3), cudaMemcpyDeviceToHost);
   for(size_t x = 0; x < dim; x++)
   {
     scene->patches[x].color = sol_1[x] * scene->patches[x].color;
   }
+
   return true;
 }
 
 //Calculate the form factor between two planes
+__host__ __device__
 float form_factor(Plane *p1, Plane *p2)
 {
 	float3 p1_norm = cross(p1->x_vec, p1->y_vec);
@@ -163,28 +199,13 @@ void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t 
 	size_t blocks  = threads / threadsPerBlock;
 	blocks += ((threads % threadsPerBlock) > 0) ? 1 : 0;
 
-	//Copy data to GPU:
-	float3 *Mg, *bg, *sol_0g, *sol_1g;
-	cudaMalloc((void **) &Mg, dim * dim * sizeof(float3));
-	cudaMalloc((void **) &bg, dim * sizeof(float3));
-	cudaMalloc((void **) &sol_0g, dim * sizeof(float3));
-	cudaMalloc((void **) &sol_1g, dim * sizeof(float3));
-
-	cudaMemcpy(Mg, M, dim*dim * sizeof(float3),     cudaMemcpyHostToDevice);
-	cudaMemcpy(bg, b, dim * sizeof(float3),         cudaMemcpyHostToDevice);
-	cudaMemcpy(sol_0g, sol_0, dim * sizeof(float3), cudaMemcpyHostToDevice);
-	cudaMemcpy(sol_1g, sol_1, dim * sizeof(float3), cudaMemcpyHostToDevice);
-
 	for(size_t ii = 0; ii < iters; ii++)
 	{
 		//jacobi_CPU(sol_0, sol_1, M, b, dim);
 		//jacobi_CPU(sol_1, sol_0, M, b, dim);
-		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_0g, sol_1g, Mg, bg, dim);
-		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_1g, sol_0g, Mg, bg, dim);
+		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_0, sol_1, M, b, dim);
+		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_1, sol_0, M, b, dim);
 	}
-
-	//Copy data back to CPU:
-	cudaMemcpy(sol_1, sol_1g, dim * sizeof(float3), cudaMemcpyDeviceToHost);
 }
 
 }
