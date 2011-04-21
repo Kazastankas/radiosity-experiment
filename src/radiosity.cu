@@ -122,20 +122,17 @@ float form_factor(Plane *p1, Plane *p2)
   return ff;
 }
 
-__host__ //__device__
+__host__ __device__
 void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b, size_t dim)
 {
 	float acc = 0;
 
-	  
 	for(size_t jj = 0; jj < dim; jj++)
 	{
     if (ii == jj) continue;
 		acc += M[ii*dim + jj] * x_0[jj];
-    //printf("(%d,%d)%f*%f ", jj, ii, M[ii*dim + jj], x_0[jj]);
-  }
+	}
 
-  //printf("\naccum for x = %d is %f\n", ii, acc);
 	x_1[ii] = b[ii] - acc;  // (b[ii]- acc) / M[ii*dim + ii];
 }
 
@@ -148,7 +145,7 @@ void jacobi_GPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 	if(ii >= dim)
 		return;
 
-//	jacobi(ii, x_0, x_1, M, b, dim);
+	jacobi(ii, x_0, x_1, M, b, dim);
 }
 
 void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
@@ -164,13 +161,33 @@ void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 {
 	size_t iters = 100;
 
+	size_t threadsPerBlock = 256;
+	size_t threads = dim;
+	size_t blocks  = threads / threadsPerBlock;
+	blocks += ((threads % threadsPerBlock) > 0) ? 1 : 0;
+
+	//Copy data to GPU:
+	float *Mg, *bg, *sol_0g, *sol_1g;
+	cudaMalloc((void **) &Mg, dim * dim * sizeof(float));
+	cudaMalloc((void **) &bg, dim * sizeof(float));
+	cudaMalloc((void **) &sol_0g, dim * sizeof(float));
+	cudaMalloc((void **) &sol_1g, dim * sizeof(float));
+
+	cudaMemcpy(Mg, M, dim*dim * sizeof(float),     cudaMemcpyHostToDevice);
+	cudaMemcpy(bg, b, dim * sizeof(float),         cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_0g, sol_0, dim * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(sol_1g, sol_1, dim * sizeof(float), cudaMemcpyHostToDevice);
+
 	for(size_t ii = 0; ii < iters; ii++)
 	{
-		jacobi_CPU(sol_0, sol_1, M, b, dim);
-		jacobi_CPU(sol_1, sol_0, M, b, dim);
-		//jacobi_GPU<<<>>>(x_0, x_1, M, b, dim);
-		//jacobi_GPU<<<>>>(x_1, x_0, M, b, dim);
+		//jacobi_CPU(sol_0, sol_1, M, b, dim);
+		//jacobi_CPU(sol_1, sol_0, M, b, dim);
+		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_0g, sol_1g, Mg, bg, dim);
+		jacobi_GPU<<<blocks, threadsPerBlock>>>(sol_1g, sol_0g, Mg, bg, dim);
 	}
+
+	//Copy data back to CPU:
+	cudaMemcpy(sol_1, sol_1g, dim * sizeof(float), cudaMemcpyDeviceToHost);
 }
 
 }

@@ -44,7 +44,6 @@ public:
 
 	enum KeyDir { KD_NEG, KD_ZERO, KD_POS };
 
-	uint8_t* color_data;
   Scene scene_data;
   float *rad_matrix;
   size_t matrix_dim;
@@ -69,9 +68,6 @@ public:
 bool RadiosityApplication::initialize()
 {
   bool rv = true;
-
-	color_data = new uint8_t[WIDTH*HEIGHT*4];
-	memset( color_data, 0, WIDTH*HEIGHT*4 );
 
 	rv = rv && initialize_scene(&scene_data);
 	//rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
@@ -112,7 +108,6 @@ bool RadiosityApplication::initialize()
 
 void RadiosityApplication::destroy()
 {
-	delete [] color_data;
 	delete [] rad_matrix;
 }
 
@@ -140,7 +135,8 @@ void RadiosityApplication::update( double dt )
 		break;
 	}
 
-  	float3 sidedir = -make_float3( cos(camera.theta + PI/2.0)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
+	float theta2   = camera.theta + PI/2.0;
+  	float3 sidedir = -make_float3( cos(theta2), 0, sin(theta2) );
 	switch ( keys.move_horz ) {
 	case KD_NEG:
 		camera.position -= CAM_MOVE_SPEED * dt * sidedir;
