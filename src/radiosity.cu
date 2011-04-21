@@ -92,9 +92,9 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
   for(size_t x = 0; x < dim; x++)
   {
     //printf("%f ", sol_1[x]);
-    scene->patches[x].color = sol_1[x] * scene->patches[x].color;
+    scene->patches[x].color = fabs(sol_1[x]) * scene->patches[x].color;
   }
-  printf("\n");
+  //printf("\n");
   return true;
 }
 
@@ -107,7 +107,7 @@ float form_factor(Plane *p1, Plane *p2)
 	float a2 = length(p2_norm);
 
 	float3 btwn = (p1->corner_pos + 0.5 * p1->x_vec + 0.5 * p1->y_vec) -
-				  (p2->corner_pos + 0.5 * p2->x_vec + 0.5 * p2->y_vec);
+				        (p2->corner_pos + 0.5 * p2->x_vec + 0.5 * p2->y_vec);
 	float  dist = length(btwn);
 
 	btwn    = normalize(btwn);
@@ -162,9 +162,9 @@ void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 __host__
 void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 {
-	size_t iters = 100;
+	size_t iters = 1000;
 
-	for(size_t ii = 0; ii < iters; ii++)
+	for (size_t ii = 0; ii < iters; ii++)
 	{
 		jacobi_CPU(sol_0, sol_1, M, b, dim);
 		jacobi_CPU(sol_1, sol_0, M, b, dim);
