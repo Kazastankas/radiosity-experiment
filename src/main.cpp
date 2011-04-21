@@ -191,8 +191,9 @@ void RadiosityApplication::render()
   glLoadIdentity();
 
   //Set camera parameters
+  float3 dir = cam.pos + cam.dir;
   gluLookAt( cam.pos.x, cam.pos.y, cam.pos.z,
-             cam.dir.x, cam.dir.y, cam.dir.z,
+             dir.x,     dir.y,     dir.z,
 		     cam.up.x,  cam.up.y,  cam.up.z);
 
 	draw_scene(&scene_data);
