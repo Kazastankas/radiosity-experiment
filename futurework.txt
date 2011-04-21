@@ -1,0 +1,16 @@
+Future Work:
+
+	
+Textures & Smoothing
+	Due to the nature of the radiosity algorithm, it is generally infeasible to compute radiosity per-pixel
+	(and indeed, without knowing the camera position ahead of time, this is truly impossible).
+	As a compromise, we subdivide all surfaces in the scene into small patches and compute energy transfer per patch.
+	One improvement we plan to make on this strategy is to store radiosity information to textures and blur each of these textures to create a smooth result.
+
+Multiple Cameras
+	In order to evaluate the benefits one could get from computing radiosity on the cloud, we will implement
+	a second (and possibly third or fourth) camera.  This will help showcase the view-independent nature of the calculation.
+
+Dynamic Scenes
+	With a static scene, it is unneccesary to recompute radiosity per-frame.  Instead, we can precompute radiosity and continue to use a stored result.
+	We will generalize this to scenes with moving light-sources and recompute as necessary.
