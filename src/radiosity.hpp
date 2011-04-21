@@ -44,10 +44,10 @@ struct Scene
     std::vector<Plane> patches;
 };
 
-bool initialize_radiosity(Scene* scene, float* matrix, size_t* matrix_dim);
-bool calc_radiosity(Scene* scene, float* matrix, size_t dim);
+bool initialize_radiosity(Scene* scene, float3* matrix, size_t* matrix_dim);
+bool calc_radiosity(Scene* scene, float3* matrix, size_t dim);
 float form_factor(Plane *p1, Plane *p2);
-void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim);
+void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t dim);
 }
 
 #endif

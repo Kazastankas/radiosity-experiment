@@ -144,7 +144,7 @@ bool initialize_scene(Scene* scene)
       outside_light.y_vec = make_float3(0, SPLIT_UNIT, 0);
       outside_light.x_min = outside_light.y_min = 0;
       outside_light.x_max = outside_light.y_max = 1;
-      outside_light.emission = 150;
+      outside_light.emission = 100;
       outside_light.reflectance = 0;
       outside_light.energy = GLOBAL_ENERGY;
       scene->patches.push_back(outside_light);

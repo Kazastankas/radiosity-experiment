@@ -18,7 +18,7 @@
 namespace radiosity {
 
 static const SDLKey KEY_SCREENSHOT = SDLK_f;
-static const float MIN_CAM_PHI = PI / 8.0f;
+static const float MIN_CAM_PHI = 0;
 static const float MAX_CAM_PHI = PI;
 static const float MIN_CAM_DIST = 1.0f;
 static const float CAM_ROTATE_SPEED = 5.0f;
@@ -45,7 +45,7 @@ public:
 	enum KeyDir { KD_NEG, KD_ZERO, KD_POS };
 
   Scene scene_data;
-  float *rad_matrix;
+  float3 *rad_matrix;
   size_t matrix_dim;
   GLuint texture;
 
@@ -73,7 +73,7 @@ bool RadiosityApplication::initialize()
 	//rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
 
 	matrix_dim = scene_data.patches.size();
-	rad_matrix = new float[matrix_dim * matrix_dim];
+	rad_matrix = new float3[matrix_dim * matrix_dim];
 	rv = rv && calc_radiosity(&scene_data, rad_matrix, matrix_dim);
 
 
@@ -180,7 +180,7 @@ void RadiosityApplication::render()
   glLoadIdentity();
   gluPerspective(cam.fov * 180.0 / PI,
 				 cam.aspect_ratio,
-				 0.01f,
+				 0.00001f,
 				 100.0f);
 
   glMatrixMode(GL_MODELVIEW);
