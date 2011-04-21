@@ -54,18 +54,9 @@ float visible(Scene* scene, size_t src, size_t dst)
 }
 
 
-bool initialize_radiosity(Scene* scene, float* matrix, size_t* matrix_dim)
-{
-  size_t dim = scene->patches.size();
-  *matrix_dim = dim;
-  
-  matrix = new float[dim * dim];
-
-  return calc_radiosity(scene, matrix, dim);
-}
-
 bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
 {
+  //Populate energy-transfer matrix
   for (size_t x = 0; x < dim; x++) {
     if (x % 32 == 0) {
       printf("Starting row %d\n", x);
@@ -80,6 +71,26 @@ bool calc_radiosity(Scene* scene, float* matrix, size_t dim)
     }
     matrix[x * dim + x] = 1.0f;
   }
+  //Populate initial state
+  float *energies = new float[dim];
+  float *sol_0    = new float[dim];
+  float *sol_1    = new float[dim];
+  for(size_t ii = 0; ii < dim; ii++)
+  {
+    energies[ii] = scene->patches[ii].energy;
+    sol_0[ii] = energies[ii];
+    sol_1[ii] = energies[ii];
+  }
+  
+  //Solve, then populate textures
+  solve_radiosity(matrix, energies, sol_0, sol_1, dim);
+
+  //Populate patches with solved colors
+  for(size_t x = 0; x < dim; x++)
+  {
+	scene->patches[x].color = sol_1[x] * scene->patches[x].color;
+  }
+
   return true;
 }
 
@@ -91,7 +102,8 @@ float form_factor(Plane *p1, Plane *p2)
 	float a1 = length(p1_norm);
 	float a2 = length(p2_norm);
 
-	float3 btwn = p1->corner_pos - p2->corner_pos;
+	float3 btwn = (p1->corner_pos + 0.5 * p1->x_vec + 0.5 * p1->y_vec) -
+				  (p2->corner_pos + 0.5 * p2->x_vec + 0.5 * p2->y_vec);
 	float  dist = length(btwn);
 
 	btwn    = normalize(btwn);
@@ -106,57 +118,51 @@ float form_factor(Plane *p1, Plane *p2)
 	return ff;
 }
 
-__host__ __device__
-void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b)
+__host__ //__device__
+void jacobi(size_t ii, float *x_0, float *x_1, float *M, float* b, size_t dim)
 {
 	float acc = 0;
-	size_t dim = 10; //TODO: matrix dimensions
 
 	for(size_t jj = 0; jj < dim; jj++)
 	{
 		acc += M[ii*dim + jj] * x_0[jj];
+		if(ii == 0) printf("M: %f x_0: %f acc: %f    %d %d %d\n", M[ii*dim + jj], x_0[jj], acc, ii, jj, dim);
 	}
 
-	x_1[ii] = (b[ii] - acc) / M[ii*dim + ii];
+	x_1[ii] = b[ii] - acc;  // (b[ii]- acc) / M[ii*dim + ii];
 }
 
 __global__
-void jacobi_GPU(float *x_0, float *x_1, float *M, float *b)
+void jacobi_GPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 {
 	size_t ii = blockIdx.x * blockDim.x + threadIdx.x;
 
 	//Check index
-	size_t dim = 10;
 	if(ii >= dim)
 		return;
 
-	jacobi(ii, x_0, x_1, M, b);
+//	jacobi(ii, x_0, x_1, M, b, dim);
 }
 
-void jacobi_CPU(float *x_0, float *x_1, float *M, float *b)
+void jacobi_CPU(float *x_0, float *x_1, float *M, float *b, size_t dim)
 {
-	size_t dim = 10; //TODO: matrix dimensions
 	for(size_t ii = 0; ii < dim; ii++)
 	{
-		jacobi(ii, x_0, x_1, M, b);
+		jacobi(ii, x_0, x_1, M, b, dim);
 	}
 }
 
 __host__
-void solveRadiosity()
+void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim)
 {
-	size_t iters = 5;
-	float *M;
-	float *x_0;
-	float *x_1;
-	float *b;
+	size_t iters = 1;
 
 	for(size_t ii = 0; ii < iters; ii++)
 	{
-		jacobi_CPU(x_0, x_1, M, b);
-		jacobi_CPU(x_1, x_0, M, b);
-		//jacobi_GPU<<<>>>(x_0, x_1, M, b);
-		//jacobi_GPU<<<>>>(x_1, x_0, M, b);
+		jacobi_CPU(sol_0, sol_1, M, b, dim);
+		jacobi_CPU(sol_1, sol_0, M, b, dim);
+		//jacobi_GPU<<<>>>(x_0, x_1, M, b, dim);
+		//jacobi_GPU<<<>>>(x_1, x_0, M, b, dim);
 	}
 }
 

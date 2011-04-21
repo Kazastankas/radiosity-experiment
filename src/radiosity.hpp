@@ -47,6 +47,7 @@ struct Scene
 bool initialize_radiosity(Scene* scene, float* matrix, size_t* matrix_dim);
 bool calc_radiosity(Scene* scene, float* matrix, size_t dim);
 float form_factor(Plane *p1, Plane *p2);
+void solve_radiosity(float *M, float *b, float *sol_0, float *sol_1, size_t dim);
 }
 
 #endif

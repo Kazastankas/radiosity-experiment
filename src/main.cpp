@@ -74,7 +74,12 @@ bool RadiosityApplication::initialize()
 	memset( color_data, 0, WIDTH*HEIGHT*4 );
 
 	rv = rv && initialize_scene(&scene_data);
-	rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
+	//rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
+
+	matrix_dim = scene_data.patches.size();
+	rad_matrix = new float[matrix_dim * matrix_dim];
+	rv = rv && calc_radiosity(&scene_data, rad_matrix, matrix_dim);
+
 
   glClearColor( 0, 0, 0, 0 );
   glEnable( GL_BLEND );
@@ -171,6 +176,8 @@ void RadiosityApplication::render()
   cam.fov = camera.fov;
   cam.aspect_ratio = camera.aspect;
 
+
+  //OpenGL render
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
   glMatrixMode( GL_PROJECTION );
@@ -186,7 +193,7 @@ void RadiosityApplication::render()
   //Set camera parameters
   gluLookAt( cam.pos.x, cam.pos.y, cam.pos.z,
              cam.dir.x, cam.dir.y, cam.dir.z,
-			       cam.up.x,  cam.up.y,  cam.up.z);
+		     cam.up.x,  cam.up.y,  cam.up.z);
 
 	draw_scene(&scene_data);
 }
