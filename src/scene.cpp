@@ -20,7 +20,6 @@ bool initialize_scene(Scene* scene)
   outside_light.x_min = outside_light.y_min = 0;
   outside_light.x_max = outside_light.y_max = 1;
   outside_light.emission = 100;
-  outside_light.reflectance = MATERIAL_REFLECTIVITY;
   outside_light.energy = GLOBAL_ENERGY;
   
   Plane top_wall;
@@ -31,7 +30,6 @@ bool initialize_scene(Scene* scene)
   top_wall.x_min = top_wall.y_min = 0;
   top_wall.x_max = top_wall.y_max = 1;
   top_wall.emission = 0;
-  top_wall.reflectance = MATERIAL_REFLECTIVITY;
   top_wall.energy = GLOBAL_ENERGY;
   
   Plane bot_wall;
@@ -42,7 +40,6 @@ bool initialize_scene(Scene* scene)
   bot_wall.x_min = bot_wall.y_min = 0;
   bot_wall.x_max = bot_wall.y_max = 1;
   bot_wall.emission = 0;
-  bot_wall.reflectance = MATERIAL_REFLECTIVITY;
   bot_wall.energy = GLOBAL_ENERGY;
   
   Plane left_wall;
@@ -53,7 +50,6 @@ bool initialize_scene(Scene* scene)
   left_wall.x_min = left_wall.y_min = 0;
   left_wall.x_max = left_wall.y_max = 1;
   left_wall.emission = 0;
-  left_wall.reflectance = MATERIAL_REFLECTIVITY;
   left_wall.energy = GLOBAL_ENERGY;
   
   Plane right_wall;
@@ -64,7 +60,6 @@ bool initialize_scene(Scene* scene)
   right_wall.x_min = right_wall.y_min = 0;
   right_wall.x_max = right_wall.y_max = 1;
   right_wall.emission = 0;
-  right_wall.reflectance = MATERIAL_REFLECTIVITY;
   right_wall.energy = GLOBAL_ENERGY;
   
   Plane front_wall;
@@ -75,7 +70,6 @@ bool initialize_scene(Scene* scene)
   front_wall.x_min = front_wall.y_min = 0;
   front_wall.x_max = front_wall.y_max = 1;
   front_wall.emission = 0;
-  front_wall.reflectance = MATERIAL_REFLECTIVITY;
   front_wall.energy = GLOBAL_ENERGY;
   
   Plane back_wall_1;
@@ -86,7 +80,6 @@ bool initialize_scene(Scene* scene)
   back_wall_1.x_min = back_wall_1.y_min = 0;
   back_wall_1.x_max = back_wall_1.y_max = 1;
   back_wall_1.emission = 0;
-  back_wall_1.reflectance = MATERIAL_REFLECTIVITY;
   back_wall_1.energy = GLOBAL_ENERGY;
   
   Plane back_wall_2;
@@ -97,7 +90,6 @@ bool initialize_scene(Scene* scene)
   back_wall_2.x_min = back_wall_2.y_min = 0;
   back_wall_2.x_max = back_wall_2.y_max = 1;
   back_wall_2.emission = 0;
-  back_wall_2.reflectance = MATERIAL_REFLECTIVITY;
   back_wall_2.energy = GLOBAL_ENERGY;
   
   Plane back_wall_3;
@@ -108,7 +100,6 @@ bool initialize_scene(Scene* scene)
   back_wall_3.x_min = back_wall_3.y_min = 0;
   back_wall_3.x_max = back_wall_3.y_max = 1;
   back_wall_3.emission = 0;
-  back_wall_3.reflectance = MATERIAL_REFLECTIVITY;
   back_wall_3.energy = GLOBAL_ENERGY;
   
   Plane back_wall_4;
@@ -119,7 +110,6 @@ bool initialize_scene(Scene* scene)
   back_wall_4.x_min = back_wall_4.y_min = 0;
   back_wall_4.x_max = back_wall_4.y_max = 1;
   back_wall_4.emission = 0;
-  back_wall_4.reflectance = MATERIAL_REFLECTIVITY;
   back_wall_4.energy = GLOBAL_ENERGY;
   
   scene->planes.push_back(outside_light);
@@ -145,7 +135,6 @@ bool initialize_scene(Scene* scene)
       outside_light.x_min = outside_light.y_min = 0;
       outside_light.x_max = outside_light.y_max = 1;
       outside_light.emission = 100;
-      outside_light.reflectance = 0;
       outside_light.energy = GLOBAL_ENERGY;
       scene->patches.push_back(outside_light);
     }
@@ -162,7 +151,6 @@ bool initialize_scene(Scene* scene)
       top_wall.x_min = top_wall.y_min = 0;
       top_wall.x_max = top_wall.y_max = 1;
       top_wall.emission = 0;
-      top_wall.reflectance = MATERIAL_REFLECTIVITY;
       top_wall.energy = GLOBAL_ENERGY;
       
       Plane bot_wall;
@@ -174,7 +162,6 @@ bool initialize_scene(Scene* scene)
       bot_wall.x_min = bot_wall.y_min = 0;
       bot_wall.x_max = bot_wall.y_max = 1;
       bot_wall.emission = 0;
-      bot_wall.reflectance = MATERIAL_REFLECTIVITY;
       bot_wall.energy = GLOBAL_ENERGY;
       
       scene->patches.push_back(top_wall);
@@ -194,7 +181,6 @@ bool initialize_scene(Scene* scene)
       left_wall.x_min = left_wall.y_min = 0;
       left_wall.x_max = left_wall.y_max = 1;
       left_wall.emission = 0;
-      left_wall.reflectance = MATERIAL_REFLECTIVITY;
       left_wall.energy = GLOBAL_ENERGY;
       
       Plane right_wall;
@@ -206,7 +192,6 @@ bool initialize_scene(Scene* scene)
       right_wall.x_min = right_wall.y_min = 0;
       right_wall.x_max = right_wall.y_max = 1;
       right_wall.emission = 0;
-      right_wall.reflectance = MATERIAL_REFLECTIVITY;
       right_wall.energy = GLOBAL_ENERGY;
       
       scene->patches.push_back(left_wall);
@@ -225,7 +210,6 @@ bool initialize_scene(Scene* scene)
       front_wall.x_min = front_wall.y_min = 0;
       front_wall.x_max = front_wall.y_max = 1;
       front_wall.emission = 0;
-      front_wall.reflectance = MATERIAL_REFLECTIVITY;
       front_wall.energy = GLOBAL_ENERGY;
       
       scene->patches.push_back(front_wall);
@@ -243,7 +227,6 @@ bool initialize_scene(Scene* scene)
       back_wall.x_min = back_wall.y_min = 0;
       back_wall.x_max = back_wall.y_max = 1;
       back_wall.emission = 0;
-      back_wall.reflectance = MATERIAL_REFLECTIVITY;
       back_wall.energy = GLOBAL_ENERGY;
       
       Plane back_wall_2;
@@ -255,7 +238,6 @@ bool initialize_scene(Scene* scene)
       back_wall_2.x_min = back_wall_2.y_min = 0;
       back_wall_2.x_max = back_wall_2.y_max = 1;
       back_wall_2.emission = 0;
-      back_wall_2.reflectance = MATERIAL_REFLECTIVITY;
       back_wall_2.energy = GLOBAL_ENERGY;
       
       scene->patches.push_back(back_wall);
@@ -275,7 +257,6 @@ bool initialize_scene(Scene* scene)
       back_wall_3.x_min = back_wall_3.y_min = 0;
       back_wall_3.x_max = back_wall_3.y_max = 1;
       back_wall_3.emission = 0;
-      back_wall_3.reflectance = MATERIAL_REFLECTIVITY;
       back_wall_3.energy = GLOBAL_ENERGY;
       
       Plane back_wall_4;
@@ -287,7 +268,6 @@ bool initialize_scene(Scene* scene)
       back_wall_4.x_min = back_wall_4.y_min = 0;
       back_wall_4.x_max = back_wall_4.y_max = 1;
       back_wall_4.emission = 0;
-      back_wall_4.reflectance = MATERIAL_REFLECTIVITY;
       back_wall_4.energy = GLOBAL_ENERGY;
       
       scene->patches.push_back(back_wall_3);
@@ -321,7 +301,7 @@ void draw_scene(Scene *s)
 {
 	std::vector<Plane>::iterator it;
 	for(it=s->patches.begin(); it < s->patches.end(); it++)
-		draw_plane(&(*it)); // Somehow not the same as draw_plane(it);  :(
+		draw_plane(&(*it));
 }
 
 }

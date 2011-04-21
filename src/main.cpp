@@ -23,6 +23,8 @@ static const float MAX_CAM_PHI = PI;
 static const float MIN_CAM_DIST = 1.0f;
 static const float CAM_ROTATE_SPEED = 5.0f;
 static const float CAM_MOVE_SPEED = 10.0f;
+static const float CAM_NEAR_CLIP  = 0.01f;
+static const float CAM_FAR_CLIP   = 100.0f;
 
 static const int WIDTH = 512;
 static const int HEIGHT = 512;
@@ -70,7 +72,6 @@ bool RadiosityApplication::initialize()
   bool rv = true;
 
 	rv = rv && initialize_scene(&scene_data);
-	//rv = rv && initialize_radiosity(&scene_data, rad_matrix, &matrix_dim);
 
 	matrix_dim = scene_data.patches.size();
 	rad_matrix = new float3[matrix_dim * matrix_dim];
@@ -135,6 +136,7 @@ void RadiosityApplication::update( double dt )
 		break;
 	}
 
+	//Lateral movement:
 	float theta2   = camera.theta + PI/2.0;
   	float3 sidedir = -make_float3( cos(theta2), 0, sin(theta2) );
 	switch ( keys.move_horz ) {
@@ -148,6 +150,7 @@ void RadiosityApplication::update( double dt )
 		break;
 	}
 
+	//Forward movement:
   	float3 camdir = -make_float3( cos(camera.theta)*sin(camera.phi), cos(camera.phi), sin(camera.theta)*sin(camera.phi) );
 	switch ( keys.move_vert ) {
 	case KD_NEG:
@@ -173,31 +176,31 @@ void RadiosityApplication::render()
   cam.aspect_ratio = camera.aspect;
 
 
-  //OpenGL render
+  //OpenGL rendering:
   glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
+  //Set camera parameters
   glMatrixMode( GL_PROJECTION );
   glLoadIdentity();
   gluPerspective(cam.fov * 180.0 / PI,
 				 cam.aspect_ratio,
-				 0.00001f,
-				 100.0f);
+				 CAM_NEAR_CLIP,
+				 CAM_FAR_CLIP);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  //Set camera parameters
   float3 dir = cam.pos + cam.dir;
   gluLookAt( cam.pos.x, cam.pos.y, cam.pos.z,
              dir.x,     dir.y,     dir.z,
 		     cam.up.x,  cam.up.y,  cam.up.z);
 
+  //Draw every patch in the scene
 	draw_scene(&scene_data);
 }
 
 void RadiosityApplication::handle_event( const SDL_Event& event )
 {
-  // open to add more event handlers
   switch ( event.type )
   {
   case SDL_KEYDOWN:
@@ -294,17 +297,6 @@ void RadiosityApplication::handle_event( const SDL_Event& event )
 
 using namespace radiosity;
 
-static void print_usage( const char* progname )
-{
-    /*
-    printf( "Usage: %s <num_cameras> <image_size> [data_dir]\n\twhere"\
-            "\n\tnum_cameras = {545, 2113}\n\t"\
-            "image_size = {128, 256}\n\t"\
-            "data_dir is the root directory of the lightfield data,\n\t"\
-            "or the default /afs location if not given. Do not provide\n\t"\
-            "this argument when running on GHC.\n", progname );
-    */
-}
 
 int main( int argc, char* argv[] )
 {
@@ -321,7 +313,6 @@ int main( int argc, char* argv[] )
   return 0;
 
   FAIL:
-    print_usage( argv[0] );
     return 1;
 }
 

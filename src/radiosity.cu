@@ -2,13 +2,12 @@
 #include "radiosity.hpp"
 #include "cutil_math.hpp"
 #include <stdio.h>
-#include <limits>
 
 namespace radiosity {
 
 #define PI 3.14159265358979f
 
-float visible(Scene* scene, size_t src, size_t dst) 
+bool visible(Scene* scene, size_t src, size_t dst) 
 {
 
   float3 pos = scene->patches[src].corner_pos;
@@ -69,8 +68,8 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
       }
 
       float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].color; //reflectance;
-      matrix[x * dim + y] = -ff * scene->patches[x].color; //reflectance;
+      matrix[y * dim + x] = -ff * scene->patches[y].color;
+      matrix[x * dim + y] = -ff * scene->patches[x].color;
     }
     matrix[x * dim + x] = make_float3(1.0f);
   }
@@ -91,10 +90,8 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
   //Populate patches with solved colors
   for(size_t x = 0; x < dim; x++)
   {
-    //printf("%f ", sol_1[x]);
     scene->patches[x].color = sol_1[x] * scene->patches[x].color;
   }
-  printf("\n");
   return true;
 }
 
