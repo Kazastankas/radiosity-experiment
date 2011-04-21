@@ -3,9 +3,9 @@
 #include <SDL/SDL_opengl.h>
 #include <vector>
 
-#define SPLIT_UNIT 1.0f
+#define SPLIT_UNIT 2.0f
 #define MATERIAL_REFLECTIVITY 0.74f
-#define GLOBAL_ENERGY 1.0f
+#define GLOBAL_ENERGY 0.0f
 
 namespace radiosity {
 
@@ -134,8 +134,8 @@ bool initialize_scene(Scene* scene)
   scene->planes.push_back(back_wall_4);
 
   // patches
-  for (int x = 0; x < (int) (1.0f / SPLIT_UNIT); x++) {
-    for (int y = 0; y < (int) (1.0f / SPLIT_UNIT); y++) {
+  for (int x = 0; x < (int) (2.0f / SPLIT_UNIT); x++) {
+    for (int y = 0; y < (int) (2.0f / SPLIT_UNIT); y++) {
       Plane outside_light;
       outside_light.corner_pos = make_float3(((float) x * SPLIT_UNIT) - 1.0f,
                                              ((float) y * SPLIT_UNIT) - 1.0f, 10);
@@ -320,7 +320,7 @@ void draw_plane(Plane *p)
 void draw_scene(Scene *s)
 {
 	std::vector<Plane>::iterator it;
-	for(it=s->planes.begin(); it < s->planes.end(); it++)
+	for(it=s->patches.begin(); it < s->patches.end(); it++)
 		draw_plane(&(*it)); // Somehow not the same as draw_plane(it);  :(
 }
 
