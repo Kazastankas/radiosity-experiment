@@ -1,7 +1,10 @@
 
 #include "radiosity.hpp"
+#include "scene.hpp"
 #include "cutil_math.hpp"
 #include <stdio.h>
+
+#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
 
 namespace radiosity {
 
@@ -20,6 +23,63 @@ bool visible(Scene* scene, size_t src, size_t dst)
     return false;
 
   return true;
+}
+
+void update_radiosity(Scene *scene, float3 *matrix, size_t dim)
+{
+  //Populate initial state
+  float3 *energies = new float3[dim];
+  float3 *sol_0    = new float3[dim];
+  float3 *sol_1    = new float3[dim];
+  for(size_t ii = 0; ii < dim; ii++)
+  {
+    energies[ii] = make_float3(scene->patches[ii].emission);
+    sol_0[ii] = energies[ii];
+    sol_1[ii] = energies[ii];
+  }
+  
+  //Solve, then populate textures
+  solve_radiosity(matrix, energies, sol_0, sol_1, dim);
+
+  //Populate patches with solved colors
+  for(size_t x = 0; x < dim; x++)
+  {
+    scene->patches[x].color = sol_1[x] * scene->patches[x].reflectivity;
+  }
+
+  delete energies;
+  delete sol_0;
+  delete sol_1;
+}
+
+void update_light(Scene* scene, float3* matrix, size_t dim)
+{
+  //Move light slowly:
+  for(size_t x = 0; x < dim; x++) {
+	if(IS_LIGHT(x))
+		scene->patches[x].corner_pos.z -= 0.1f;
+  }
+
+  //Populate energy-transfer matrix
+  for (size_t x = 0; x < dim; x++) {
+    if (!IS_LIGHT(x))
+		continue;
+
+    for (size_t y = x+1; y < dim; y++) {
+      bool v = visible(scene, x, y);
+      if (!v) {
+        matrix[y * dim + x] = matrix[x * dim + y] = make_float3(0.0f);
+        continue;
+      }
+
+      float ff = form_factor(&scene->patches[y], &scene->patches[x]);
+      matrix[y * dim + x] = -ff * scene->patches[y].reflectivity;
+      matrix[x * dim + y] = -ff * scene->patches[x].reflectivity;
+
+    }
+  }
+
+  update_radiosity(scene, matrix, dim);
 }
 
 
@@ -43,25 +103,8 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
     }
     matrix[x * dim + x] = make_float3(1.0f);
   }
-  //Populate initial state
-  float3 *energies = new float3[dim];
-  float3 *sol_0    = new float3[dim];
-  float3 *sol_1    = new float3[dim];
-  for(size_t ii = 0; ii < dim; ii++)
-  {
-    energies[ii] = make_float3(scene->patches[ii].emission);
-    sol_0[ii] = energies[ii];
-    sol_1[ii] = energies[ii];
-  }
-  
-  //Solve, then populate textures
-  solve_radiosity(matrix, energies, sol_0, sol_1, dim);
 
-  //Populate patches with solved colors
-  for(size_t x = 0; x < dim; x++)
-  {
-    scene->patches[x].color = sol_1[x] * scene->patches[x].reflectivity;
-  }
+  update_radiosity(scene, matrix, dim);
   return true;
 }
 
@@ -126,7 +169,7 @@ void jacobi_CPU(float3 *x_0, float3 *x_1, float3 *M, float3 *b, size_t dim)
 __host__
 void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t dim)
 {
-	size_t iters = 100;
+	size_t iters = 4;
 
 	size_t threadsPerBlock = 256;
 	size_t threads = dim;
@@ -155,6 +198,11 @@ void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t 
 
 	//Copy data back to CPU:
 	cudaMemcpy(sol_1, sol_1g, dim * sizeof(float3), cudaMemcpyDeviceToHost);
+
+	cudaFree(Mg);
+	cudaFree(bg);
+	cudaFree(sol_0g);
+	cudaFree(sol_1g);
 }
 
 }

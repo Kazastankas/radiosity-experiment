@@ -8,6 +8,8 @@
 #define MATERIAL_REFLECTIVITY 0.74f
 #define GLOBAL_ENERGY 0.0f
 
+#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
+
 namespace radiosity {
 
 bool initialize_scene(Scene* scene) 
@@ -567,7 +569,8 @@ bool initialize_scene(Scene* scene)
   }
  
   for (size_t i = 0; i < scene->patches.size(); i++) {
-    scene->tree.insert(&scene->patches[i].bound);
+    if(!IS_LIGHT(i))
+      scene->tree.insert(&scene->patches[i].bound);
   }
 
   return true;

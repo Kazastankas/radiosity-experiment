@@ -241,7 +241,7 @@ float Box::intersect_parent(float3 e, float3 d, float t0, float t1,
       u_hit >= parent->x_min && u_hit <= parent->x_max &&
       v_hit >= parent->y_min && v_hit <= parent->y_max)
   {
-    *out = parent;
+    if(out) *out = parent;
     return t_hit;
   }
   return t1;
