@@ -13,7 +13,6 @@
 #include <SDL/SDL_opengl.h>
 #include <stdio.h>
 
-#define PI 3.1415926535f
 
 namespace radiosity {
 
@@ -114,6 +113,9 @@ void RadiosityApplication::destroy()
 
 void RadiosityApplication::update( double dt )
 {
+	update_light(&scene_data, rad_matrix, matrix_dim);
+
+
 	switch ( keys.horz ) {
 	case KD_NEG:
 		camera.theta = fmod( camera.theta - CAM_ROTATE_SPEED * dt, 2*PI );
