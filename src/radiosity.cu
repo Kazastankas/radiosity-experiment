@@ -9,45 +9,15 @@ namespace radiosity {
 
 bool visible(Scene* scene, size_t src, size_t dst) 
 {
-
   float3 pos = scene->patches[src].corner_pos;
   float3 dir = scene->patches[dst].corner_pos -
                scene->patches[src].corner_pos;
   float hit_time = length(dir);
   dir = normalize(dir);
+  float new_hit = scene->tree.intersect(pos, dir, EPSILON, hit_time, NULL);
 
-  // Check versus everything else, see if something else gets hit first.
-  for (size_t i = 0; i < scene->patches.size(); i++) {
-    if (i == src || i == dst) continue;
-
-    float3 p0 = scene->patches[i].corner_pos;
-    float3 p1 = p0 + scene->patches[i].x_vec;
-    float3 p2 = p0 + scene->patches[i].y_vec;
-    
-    // column vectors
-    float3 c1 = -dir;
-    float3 c2 = p1 - p0;
-    float3 c3 = p2 - p0;
-    float det = dot(c1, cross(c2, c3));
-    
-    // inverted row vectors
-    float3 r1 = cross(c2, c3) / det;
-    float3 r2 = cross(c3, c1) / det;
-    float3 r3 = cross(c1, c2) / det;
-    
-    // coefficients
-    float t_hit = dot(r1, pos - p0);
-    float u_hit = dot(r2, pos - p0);
-    float v_hit = dot(r3, pos - p0);
-    
-    // We've hit something else first, abort!
-    if (t_hit > 0 && t_hit < hit_time &&
-        u_hit >= scene->patches[i].x_min && u_hit <= scene->patches[i].x_max &&
-        v_hit >= scene->patches[i].y_min && v_hit <= scene->patches[i].y_max)
-    {
-      return false;
-    }
-  }
+  if (new_hit < hit_time)
+    return false;
 
   return true;
 }

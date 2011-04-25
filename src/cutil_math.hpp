@@ -4,10 +4,15 @@
 
 #include <stdint.h>
 #include "cuda_runtime.h"
+#include <limits>
 
 ////////////////////////////////////////////////////////////////////////////////
 typedef unsigned int uint;
 typedef unsigned short ushort;
+
+#define PI 3.14159265358979f
+#define INFTY std::numeric_limits<float>::infinity()
+#define EPSILON 0.00001f
 
 #ifndef __CUDACC__
 #include <math.h>

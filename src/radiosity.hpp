@@ -1,6 +1,8 @@
 #ifndef RADIOSITY_H
 #define RADIOSITY_H
 
+#include "kdtree.hpp"
+
 #include <stdint.h>
 #include <cuda_runtime.h>
 #include <vector>
@@ -34,13 +36,15 @@ struct Plane
     float3 color;
     float emission;
     float energy;
+
+    Box bound;
 };
 
 // Contains all state, perhaps also the data we calculate.
 struct Scene
 {
-    std::vector<Plane> planes;
     std::vector<Plane> patches;
+    KDTree tree;
 };
 
 bool calc_radiosity(Scene* scene, float3* matrix, size_t dim);

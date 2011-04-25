@@ -6,6 +6,8 @@ SRCS = \
 	imageio.cpp \
 	application.cpp \
 	scene.cpp \
+	box.cpp \
+	kdtree.cpp \
 	main.cpp
 
 CUDA_SRCS = \
