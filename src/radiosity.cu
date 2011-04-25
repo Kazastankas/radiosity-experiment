@@ -38,8 +38,8 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
       }
 
       float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].color;
-      matrix[x * dim + y] = -ff * scene->patches[x].color;
+      matrix[y * dim + x] = -ff * scene->patches[y].reflectivity;
+      matrix[x * dim + y] = -ff * scene->patches[x].reflectivity;
     }
     matrix[x * dim + x] = make_float3(1.0f);
   }
@@ -60,7 +60,7 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
   //Populate patches with solved colors
   for(size_t x = 0; x < dim; x++)
   {
-    scene->patches[x].color = sol_1[x] * scene->patches[x].color;
+    scene->patches[x].color = sol_1[x] * scene->patches[x].reflectivity;
   }
   return true;
 }

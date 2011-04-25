@@ -11,7 +11,7 @@
 #include "box.hpp"
 #include <vector>
 
-#define MAX_KD_ELTS 8
+#define MAX_KD_ELTS 16
 #define MAX_KD_DEPTH 30
 
 namespace radiosity {

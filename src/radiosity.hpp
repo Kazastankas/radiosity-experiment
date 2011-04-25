@@ -34,9 +34,12 @@ struct Plane
     float y_min;
     float y_max;
     float3 color;
+    float3 reflectivity;
     float emission;
     float energy;
 
+    // NW N NE E SE S SW W neighbors
+    size_t ns[8];
     Box bound;
 };
 
