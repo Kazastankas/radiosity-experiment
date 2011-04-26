@@ -8,7 +8,9 @@
 
 namespace radiosity {
 
-#define PI 3.14159265358979f
+static const float LIGHT_VELOCITY = 0.5f;
+static const float LIGHT_Z_MAX    = 10.0f;
+static const float LIGHT_Z_MIN    = -10.0f;
 
 bool visible(Scene* scene, size_t src, size_t dst) 
 {
@@ -47,17 +49,20 @@ void update_radiosity(Scene *scene, float3 *matrix, size_t dim)
     scene->patches[x].color = sol_1[x] * scene->patches[x].reflectivity;
   }
 
-  delete energies;
-  delete sol_0;
-  delete sol_1;
+  delete [] energies;
+  delete [] sol_0;
+  delete [] sol_1;
 }
 
-void update_light(Scene* scene, float3* matrix, size_t dim)
+void update_light(Scene* scene, float3* matrix, size_t dim, double dt)
 {
+  if(scene->patches[0].corner_pos.z > LIGHT_Z_MAX ||
+	 scene->patches[0].corner_pos.z < LIGHT_Z_MIN)
+	scene->dir = -scene->dir;
   //Move light slowly:
   for(size_t x = 0; x < dim; x++) {
 	if(IS_LIGHT(x))
-		scene->patches[x].corner_pos.z -= 0.1f;
+		scene->patches[x].corner_pos.z += dt * scene->dir * LIGHT_VELOCITY;
   }
 
   //Populate energy-transfer matrix
@@ -78,8 +83,6 @@ void update_light(Scene* scene, float3* matrix, size_t dim)
 
     }
   }
-
-  update_radiosity(scene, matrix, dim);
 }
 
 
