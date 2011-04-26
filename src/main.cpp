@@ -30,6 +30,8 @@ static const int HEIGHT = 512;
 static const double FPS = 60.0;
 static const char* TITLE = "Radiosity Renderer";
 
+static const double RADIOSITY_STEP = 0.5f;
+
 class RadiosityApplication : public Application
 {
 public:
@@ -45,10 +47,16 @@ public:
 
 	enum KeyDir { KD_NEG, KD_ZERO, KD_POS };
 
-  Scene scene_data;
-  float3 *rad_matrix;
+  Scene scene_data_0;
+  Scene scene_data_1;
+  Scene scene_interpolated;
+
   size_t matrix_dim;
-  GLuint texture;
+  float3 *rad_matrix_0;
+  float3 *rad_matrix_1;
+  float3 *interpolated;
+
+  double time;
 
 	struct {
 		KeyDir horz;
@@ -70,11 +78,19 @@ bool RadiosityApplication::initialize()
 {
   bool rv = true;
 
-	rv = rv && initialize_scene(&scene_data);
+	rv = rv && initialize_scene(&scene_data_0);
+	rv = rv && initialize_scene(&scene_data_1);
+	rv = rv && initialize_scene(&scene_interpolated);
+	matrix_dim = scene_data_0.patches.size();
 
-	matrix_dim = scene_data.patches.size();
-	rad_matrix = new float3[matrix_dim * matrix_dim];
-	rv = rv && calc_radiosity(&scene_data, rad_matrix, matrix_dim);
+	rad_matrix_0 = new float3[matrix_dim * matrix_dim];
+	rad_matrix_1 = new float3[matrix_dim * matrix_dim];
+	interpolated = new float3[matrix_dim * matrix_dim];
+
+	rv = rv && calc_radiosity(&scene_data_0, rad_matrix_0, matrix_dim);
+	memcpy(rad_matrix_1, rad_matrix_0, matrix_dim*matrix_dim*sizeof(float3));
+
+  time = 0.0f;
 
 
   glClearColor( 0, 0, 0, 0 );
@@ -108,12 +124,48 @@ bool RadiosityApplication::initialize()
 
 void RadiosityApplication::destroy()
 {
-	delete [] rad_matrix;
+	delete [] rad_matrix_0;
+	delete [] rad_matrix_1;
+	delete [] interpolated;
 }
 
 void RadiosityApplication::update( double dt )
 {
-	update_light(&scene_data, rad_matrix, matrix_dim);
+	time += dt;
+
+	//Radiosity data is stale... update
+	if(time > RADIOSITY_STEP)
+	{
+		//swap buffers:
+		float3 *m_temp = rad_matrix_1;
+		rad_matrix_1 = rad_matrix_0;
+		rad_matrix_0 = m_temp;
+
+		Scene s_temp = scene_data_1;
+		scene_data_1 = scene_data_0;
+		scene_data_0 = s_temp;
+
+		//Update radiosity data
+		update_light(&scene_data_0, rad_matrix_0, matrix_dim, RADIOSITY_STEP);
+		time = 0;
+	}
+
+	//Interpolate radiosity data to get current frame
+	float alpha = time / RADIOSITY_STEP;
+	for(size_t xx=0; xx<matrix_dim; xx++)
+	{
+		for(size_t yy=0; yy<matrix_dim; yy++)
+		{
+			interpolated[xx*matrix_dim + yy] =
+				(alpha)   * rad_matrix_0[xx*matrix_dim + yy] +
+				(1-alpha) * rad_matrix_1[xx*matrix_dim + yy];
+		}
+
+		scene_interpolated.patches[xx].corner_pos =
+			(alpha)   * scene_data_0.patches[xx].corner_pos +
+			(1-alpha) * scene_data_1.patches[xx].corner_pos;
+	}
+	update_radiosity(&scene_interpolated, interpolated, matrix_dim);
 
 
 	switch ( keys.horz ) {
@@ -198,7 +250,7 @@ void RadiosityApplication::render()
 		     cam.up.x,  cam.up.y,  cam.up.z);
 
   //Draw every patch in the scene
-	draw_scene(&scene_data);
+	draw_scene(&scene_interpolated);
 }
 
 void RadiosityApplication::handle_event( const SDL_Event& event )

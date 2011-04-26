@@ -14,6 +14,8 @@ namespace radiosity {
 
 bool initialize_scene(Scene* scene) 
 {
+  scene->dir = 1.0;
+
   // patches
   for (int x = 0; x < (int) (2.0f / SPLIT_UNIT); x++) {
     for (int y = 0; y < (int) (2.0f / SPLIT_UNIT); y++) {

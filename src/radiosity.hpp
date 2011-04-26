@@ -48,10 +48,12 @@ struct Scene
 {
     std::vector<Plane> patches;
     KDTree tree;
+	float dir;
 };
 
 bool calc_radiosity(Scene* scene, float3* matrix, size_t dim);
-void update_light(Scene* scene, float3* matrix, size_t dim);
+void update_radiosity(Scene* scene, float3* matrix, size_t dim);
+void update_light(Scene* scene, float3* matrix, size_t dim, double dt);
 __host__ __device__ float form_factor(Plane *p1, Plane *p2);
 void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t dim);
 }
