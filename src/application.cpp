@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 namespace radiosity {
 
@@ -46,15 +47,18 @@ void Application::get_dimension( int* width, int* height ) const
 
 void Application::take_screenshot()
 {
-	static const char* filename = "screenshot.png";
+    static int idx = 0;
+	  static const char* filename = "screenshot";
     int width, height;
 
     get_dimension( &width, &height );
 
-    if ( imageio_save_screenshot( filename, width, height ) ) {
-        std::cout << "Saved image to '" << filename << "'.\n";
+    char fname[40];
+    sprintf(fname, "%s%04d.png", filename, idx++);
+    if ( imageio_save_screenshot( fname, width, height ) ) {
+        std::cout << "Saved image to '" << fname << "'.\n";
     } else {
-        std::cout << "Error saving image to '" << filename << "'.\n";
+        std::cout << "Error saving image to '" << fname << "'.\n";
     }
 }
 
