@@ -4,7 +4,7 @@
 #include "cutil_math.hpp"
 #include <stdio.h>
 
-#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
+#define IS_LIGHT(x)		(x < (2.0f / SPLIT_UNIT) * (2.0f / SPLIT_UNIT))
 
 namespace radiosity {
 
@@ -17,11 +17,14 @@ bool visible(Scene* scene, size_t src, size_t dst)
                scene->patches[src].corner_pos;
   float hit_time = length(dir);
   dir = normalize(dir);
-  float new_hit = scene->tree.intersect(pos, dir, EPSILON, hit_time, NULL);
+  float new_hit = scene->tree.intersect(pos, dir, EPSILON, INFTY, NULL);
 
-  if (new_hit < hit_time)
+  if (new_hit < hit_time) {
+    //printf("occlusion\n");
     return false;
+  }
 
+  //printf("%f vs %f\n", hit_time, new_hit);
   return true;
 }
 
@@ -54,16 +57,18 @@ void update_radiosity(Scene *scene, float3 *matrix, size_t dim)
 
 void update_light(Scene* scene, float3* matrix, size_t dim)
 {
-  //Move light slowly:
-  for(size_t x = 0; x < dim; x++) {
-	if(IS_LIGHT(x))
-		scene->patches[x].corner_pos.z -= 0.1f;
-  }
-
-  //Populate energy-transfer matrix
+  // Move light slowly:
+  static float dir = 1.0f;
   for (size_t x = 0; x < dim; x++) {
-    if (!IS_LIGHT(x))
-		continue;
+	  if (!IS_LIGHT(x)) break;
+    scene->patches[x].corner_pos.z -= dir * 0.1f;
+  }
+  
+  if (fabs(scene->patches[0].corner_pos.z - 5.0f) > 5.0f) dir = -dir;
+
+  // Populate energy-transfer matrix
+  for (size_t x = 0; x < dim; x++) {
+    if (!IS_LIGHT(x)) continue;
 
     for (size_t y = x+1; y < dim; y++) {
       bool v = visible(scene, x, y);

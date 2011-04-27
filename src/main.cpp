@@ -164,6 +164,7 @@ void RadiosityApplication::update( double dt )
 	default:
 		break;
 	}
+          //take_screenshot();
 }
 
 void RadiosityApplication::render()

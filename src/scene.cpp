@@ -1,14 +1,14 @@
+#include "scene.hpp"
 #include "radiosity.hpp"
 #include "cutil_math.hpp"
 #include <SDL/SDL_opengl.h>
 #include <vector>
 #include <stdio.h>
 
-#define SPLIT_UNIT 1.0f
 #define MATERIAL_REFLECTIVITY 0.74f
 #define GLOBAL_ENERGY 0.0f
 
-#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
+#define IS_LIGHT(x) (x < (2.0f / SPLIT_UNIT) * (2.0f / SPLIT_UNIT))
 
 namespace radiosity {
 
@@ -20,7 +20,7 @@ bool initialize_scene(Scene* scene)
       Plane outside_light;
       outside_light.corner_pos = make_float3(((float) x * SPLIT_UNIT) - 1.0f,
                                              ((float) y * SPLIT_UNIT) - 1.0f,
-                                             5);
+                                             10);
       outside_light.reflectivity = make_float3(1, 1, 1);
       outside_light.x_vec = make_float3(SPLIT_UNIT, 0, 0);
       outside_light.y_vec = make_float3(0, SPLIT_UNIT, 0);
@@ -41,6 +41,7 @@ bool initialize_scene(Scene* scene)
   }
 
   int side_length = (int) (10.0f / SPLIT_UNIT);
+  int wider_length = (int) (8.0f / SPLIT_UNIT);
   int wide_length = (int) (4.0f / SPLIT_UNIT);
   int short_length = (int) (2.0f / SPLIT_UNIT);
   
@@ -567,11 +568,61 @@ bool initialize_scene(Scene* scene)
       scene->patches.push_back(back_wall_4);
     }
   }
+  
+  for (int x = 0; x < (int) (10.0f / SPLIT_UNIT); x++) {
+    for (int y = 0; y < (int) (10.0f / SPLIT_UNIT); y++) {
+      Plane inner_wall;
+      inner_wall.corner_pos = make_float3(((float) x * SPLIT_UNIT) - 5.0f,
+                                          ((float) y * SPLIT_UNIT) - 5.0f, -1);
+      inner_wall.reflectivity = make_float3(0.3, 0.3, 0.3);
+      inner_wall.x_vec = make_float3(SPLIT_UNIT, 0, 0);
+      inner_wall.y_vec = make_float3(0, SPLIT_UNIT, 0);
+      inner_wall.x_min = inner_wall.y_min = 0;
+      inner_wall.x_max = inner_wall.y_max = 1;
+      inner_wall.emission = 0;
+      inner_wall.energy = GLOBAL_ENERGY;
+      inner_wall.bound = Box(inner_wall.corner_pos,
+                             inner_wall.corner_pos +
+                             inner_wall.x_vec +
+                             inner_wall.y_vec,
+                             &inner_wall);
+      
+      int cur_index = scene->patches.size();
+      if (y < side_length - 1) {
+        if (x > 0) inner_wall.ns[0] = cur_index - side_length + 1;
+        else inner_wall.ns[0] = cur_index;
+        inner_wall.ns[1] = cur_index + 1;
+        if (x < side_length - 1) inner_wall.ns[2] = cur_index + side_length + 1;
+        else inner_wall.ns[2] = cur_index;
+      } else {
+        inner_wall.ns[0] = inner_wall.ns[1] = inner_wall.ns[2] = cur_index;
+      }
+
+      if (x < side_length - 1) inner_wall.ns[3] = cur_index + side_length;
+      else inner_wall.ns[3] = cur_index;
+
+      if (y > 0) {
+        if (x < side_length - 1) inner_wall.ns[4] = cur_index + side_length - 1;
+        else inner_wall.ns[4] = cur_index;
+        inner_wall.ns[5] = cur_index - 1;
+        if (x > 0) inner_wall.ns[6] = cur_index - side_length - 1;
+        else inner_wall.ns[6] = cur_index;
+      } else {
+        inner_wall.ns[4] = inner_wall.ns[5] = inner_wall.ns[6] = cur_index;
+      }
+      
+      if (x > 0) inner_wall.ns[7] = cur_index - side_length;
+      else inner_wall.ns[7] = cur_index; 
+      
+      scene->patches.push_back(inner_wall);
+    }
+  }
  
   for (size_t i = 0; i < scene->patches.size(); i++) {
-    if(!IS_LIGHT(i))
+    if (!IS_LIGHT(i))
       scene->tree.insert(&scene->patches[i].bound);
   }
+  scene->tree.split();
 
   return true;
 }
