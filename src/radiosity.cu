@@ -12,19 +12,20 @@ namespace radiosity {
 
 bool visible(Scene* scene, size_t src, size_t dst) 
 {
-  float3 pos = scene->patches[src].corner_pos;
-  float3 dir = scene->patches[dst].corner_pos -
-               scene->patches[src].corner_pos;
+  float3 pos = scene->patches[src]->corner_pos;
+  float3 dir = scene->patches[dst]->corner_pos -
+               scene->patches[src]->corner_pos;
   float hit_time = length(dir);
   dir = normalize(dir);
-  float new_hit = scene->tree.intersect(pos, dir, EPSILON, INFTY, NULL);
+  float new_hit = scene->tree.intersect(pos, dir, EPSILON, hit_time, NULL);
+  int watch_idx = 1;
 
-  if (new_hit < hit_time) {
-    //printf("occlusion\n");
+  if (new_hit - hit_time < 0.0f) {
+    if (dst == watch_idx) printf("%d not visible from %d\n", dst, src);
     return false;
   }
 
-  //printf("%f vs %f\n", hit_time, new_hit);
+  if (dst == watch_idx) printf("%d visible from %d\n", dst, src);
   return true;
 }
 
@@ -36,7 +37,7 @@ void update_radiosity(Scene *scene, float3 *matrix, size_t dim)
   float3 *sol_1    = new float3[dim];
   for(size_t ii = 0; ii < dim; ii++)
   {
-    energies[ii] = make_float3(scene->patches[ii].emission);
+    energies[ii] = make_float3(scene->patches[ii]->emission);
     sol_0[ii] = energies[ii];
     sol_1[ii] = energies[ii];
   }
@@ -47,7 +48,7 @@ void update_radiosity(Scene *scene, float3 *matrix, size_t dim)
   //Populate patches with solved colors
   for(size_t x = 0; x < dim; x++)
   {
-    scene->patches[x].color = sol_1[x] * scene->patches[x].reflectivity;
+    scene->patches[x]->color = sol_1[x] * scene->patches[x]->reflectivity;
   }
 
   delete energies;
@@ -61,10 +62,10 @@ void update_light(Scene* scene, float3* matrix, size_t dim)
   static float dir = 1.0f;
   for (size_t x = 0; x < dim; x++) {
 	  if (!IS_LIGHT(x)) break;
-    scene->patches[x].corner_pos.z -= dir * 0.1f;
+    scene->patches[x]->corner_pos.z -= dir * 0.1f;
   }
   
-  if (fabs(scene->patches[0].corner_pos.z - 5.0f) > 5.0f) dir = -dir;
+  if (fabs(scene->patches[0]->corner_pos.z - 5.0f) > 5.0f) dir = -dir;
 
   // Populate energy-transfer matrix
   for (size_t x = 0; x < dim; x++) {
@@ -77,9 +78,9 @@ void update_light(Scene* scene, float3* matrix, size_t dim)
         continue;
       }
 
-      float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].reflectivity;
-      matrix[x * dim + y] = -ff * scene->patches[x].reflectivity;
+      float ff = form_factor(scene->patches[y], scene->patches[x]);
+      matrix[y * dim + x] = -ff * scene->patches[y]->reflectivity;
+      matrix[x * dim + y] = -ff * scene->patches[x]->reflectivity;
 
     }
   }
@@ -102,9 +103,9 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
         continue;
       }
 
-      float ff = form_factor(&scene->patches[y], &scene->patches[x]);
-      matrix[y * dim + x] = -ff * scene->patches[y].reflectivity;
-      matrix[x * dim + y] = -ff * scene->patches[x].reflectivity;
+      float ff = form_factor(scene->patches[y], scene->patches[x]);
+      matrix[y * dim + x] = -ff * scene->patches[y]->reflectivity;
+      matrix[x * dim + y] = -ff * scene->patches[x]->reflectivity;
     }
     matrix[x * dim + x] = make_float3(1.0f);
   }

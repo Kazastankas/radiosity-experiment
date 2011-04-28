@@ -108,6 +108,7 @@ bool RadiosityApplication::initialize()
 
 void RadiosityApplication::destroy()
 {
+	destroy_scene(&scene_data);
 	delete [] rad_matrix;
 }
 

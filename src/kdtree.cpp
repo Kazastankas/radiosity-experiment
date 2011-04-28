@@ -7,6 +7,7 @@
 
 #include "kdtree.hpp"
 #include <algorithm>
+#include <stdio.h>
 
 namespace radiosity {
 
@@ -69,6 +70,7 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
                         struct Plane** out)
 {
   if (!is_leaf) {
+    printf("Is parent\n");
     // Parent branch
     Box l_box, r_box;
     float_t lb_t, rb_t, l_t, r_t;
@@ -83,9 +85,11 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
 
     if (lb_t == INFTY && rb_t == INFTY) {
       // If no hits, then nothing is hit. (This should never happen)
+      printf("No hit\n");
       return t1;
     }
     else if (lb_t == INFTY) {
+      printf("No left hit first\n");
       // If left is not hit, try hitting the right.
       r_t = right->intersect(e, d, t0, rb_t + 2.0f * EPSILON, out);
       if (r_t - rb_t < EPSILON) // Force that the impact is in the box
@@ -94,6 +98,7 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
         return t1;
     }
     else if (rb_t == INFTY) {
+      printf("No right hit first\n");
       // If right is not hit, try hitting the left.
       l_t = left->intersect(e, d, t0, lb_t + 2.0f * EPSILON, out);
       if (l_t - lb_t < EPSILON) // Force that the impact is in the box
@@ -102,6 +107,7 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
         return t1;
     }
     if (rb_t - lb_t > EPSILON) {
+      printf("Left before right\n");
       // If left has the smaller far-side intersect time, check it first.
       l_t = left->intersect(e, d, t0, lb_t + 2.0f * EPSILON, out);
       if (l_t - lb_t < EPSILON) // Force that the impact is in the box
@@ -116,6 +122,7 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
       }
     }
     else {
+      printf("Right before left\n");
       // Otherwise, check right first.
       r_t = right->intersect(e, d, t0, rb_t + 2.0f * EPSILON, out);
       if (r_t - rb_t < EPSILON) // Force that the impact is in the box
@@ -136,12 +143,13 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
     float impact = t1;
     float box_hit = t1;
     /* Intersect with all geometries (given by the parent pointer)
-     * of each bounding box.
-     */
+     * of each bounding box. */
     for (size_t i = 0; i < geos.size(); i++) {
       box_hit = geos[i]->intersect(e, d, t0, impact, NULL);
-      if (box_hit - impact < EPSILON)
+
+      if (box_hit - impact < EPSILON) {
         impact = geos[i]->intersect_parent(e, d, t0, impact, out);
+      }
     }
     
     return impact;
