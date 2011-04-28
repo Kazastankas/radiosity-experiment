@@ -70,7 +70,6 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
                         struct Plane** out)
 {
   if (!is_leaf) {
-    printf("Is parent\n");
     // Parent branch
     Box l_box, r_box;
     float_t lb_t, rb_t, l_t, r_t;
@@ -85,11 +84,9 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
 
     if (lb_t == INFTY && rb_t == INFTY) {
       // If no hits, then nothing is hit. (This should never happen)
-      printf("No hit\n");
       return t1;
     }
     else if (lb_t == INFTY) {
-      printf("No left hit first\n");
       // If left is not hit, try hitting the right.
       r_t = right->intersect(e, d, t0, rb_t + 2.0f * EPSILON, out);
       if (r_t - rb_t < EPSILON) // Force that the impact is in the box
@@ -98,7 +95,6 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
         return t1;
     }
     else if (rb_t == INFTY) {
-      printf("No right hit first\n");
       // If right is not hit, try hitting the left.
       l_t = left->intersect(e, d, t0, lb_t + 2.0f * EPSILON, out);
       if (l_t - lb_t < EPSILON) // Force that the impact is in the box
@@ -107,7 +103,6 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
         return t1;
     }
     if (rb_t - lb_t > EPSILON) {
-      printf("Left before right\n");
       // If left has the smaller far-side intersect time, check it first.
       l_t = left->intersect(e, d, t0, lb_t + 2.0f * EPSILON, out);
       if (l_t - lb_t < EPSILON) // Force that the impact is in the box
@@ -122,7 +117,6 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
       }
     }
     else {
-      printf("Right before left\n");
       // Otherwise, check right first.
       r_t = right->intersect(e, d, t0, rb_t + 2.0f * EPSILON, out);
       if (r_t - rb_t < EPSILON) // Force that the impact is in the box
@@ -159,8 +153,6 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
 void KDTree::split() {
   size_t gs = geos.size();
   
-  printf("Let's split!\n");
-
   if (gs <= MAX_KD_ELTS || depth > MAX_KD_DEPTH) {
     // Don't bother if node is small or recursive depth is too high.
     is_leaf = 1;
@@ -214,12 +206,12 @@ void KDTree::split() {
   int *splits_l = new int[gs];
   int *splits_r = new int[gs];
   int opt_idx = -1;
-  float opt_cost = gs;
-  float t_w = bound.max.x - bound.min.x;
-  float t_h = bound.max.y - bound.min.y;
-  float t_d = bound.max.z - bound.min.z;
+  float opt_cost = INFTY;
+  float t_w = std::max(EPSILON, bound.max.x - bound.min.x);
+  float t_h = std::max(EPSILON, bound.max.y - bound.min.y);
+  float t_d = std::max(EPSILON, bound.max.z - bound.min.z);
   float con_fac = 0.5f / (t_w * t_d + t_w * t_h + t_h * t_d);
-  
+    
   for (size_t i = 0; i < gs; i++) {
     splits_l[i] = 0;
     splits_r[i] = 0;
@@ -267,8 +259,8 @@ void KDTree::split() {
     float s1 = 2.0f * (w_1 * d_1 + w_1 * h_1 + d_1 * h_1);
     float s2 = 2.0f * (w_2 * d_2 + w_2 * h_2 + d_2 * h_2);
     float scost = 0.3f + 1.0f * (s1 * con_fac * splits_l[i] + 
-                                  s2 * con_fac * splits_r[i]);
-    
+                                 s2 * con_fac * splits_r[i]);
+   
     if (scost < opt_cost) {
       opt_cost = scost;
       opt_idx = i;
