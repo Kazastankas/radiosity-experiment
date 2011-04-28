@@ -11,6 +11,7 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <SDL/SDL_opengl.h>
+#include <SDL/SDL.h>
 #include <stdio.h>
 
 
@@ -87,8 +88,12 @@ bool RadiosityApplication::initialize()
 	rad_matrix_1 = new float3[matrix_dim * matrix_dim];
 	interpolated = new float3[matrix_dim * matrix_dim];
 
+int start_time = SDL_GetTicks();
 	rv = rv && calc_radiosity(&scene_data_0, rad_matrix_0, matrix_dim);
 	memcpy(rad_matrix_1, rad_matrix_0, matrix_dim*matrix_dim*sizeof(float3));
+int end_time = SDL_GetTicks();
+printf("patches: %d\n", scene_data_0.patches.size());
+printf("time: %f\n", (double)(end_time - start_time)/1000.0f);
 
   time = 0.0f;
 

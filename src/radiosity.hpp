@@ -38,6 +38,8 @@ struct Plane
     float emission;
     float energy;
 
+	char normal_dir;
+
     // NW N NE E SE S SW W neighbors
     size_t ns[8];
     Box bound;
@@ -54,7 +56,7 @@ struct Scene
 bool calc_radiosity(Scene* scene, float3* matrix, size_t dim);
 void update_radiosity(Scene* scene, float3* matrix, size_t dim);
 void update_light(Scene* scene, float3* matrix, size_t dim, double dt);
-__host__ __device__ float form_factor(Plane *p1, Plane *p2);
+float form_factor(Plane *p1, Plane *p2);
 void solve_radiosity(float3 *M, float3 *b, float3 *sol_0, float3 *sol_1, size_t dim);
 }
 

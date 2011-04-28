@@ -4,11 +4,11 @@
 #include <vector>
 #include <stdio.h>
 
-#define SPLIT_UNIT 1.0f
+#define SPLIT_UNIT 2.0f
 #define MATERIAL_REFLECTIVITY 0.74f
 #define GLOBAL_ENERGY 0.0f
 
-#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
+#define IS_LIGHT(x)		(x < 1) //(2/SPLIT_UNIT) * (2/SPLIT_UNIT))
 
 namespace radiosity {
 
@@ -38,6 +38,8 @@ bool initialize_scene(Scene* scene)
       outside_light.ns[0] = outside_light.ns[1] = outside_light.ns[2] =
       outside_light.ns[3] = outside_light.ns[4] = outside_light.ns[5] =
       outside_light.ns[6] = outside_light.ns[7] = scene->patches.size();
+
+      outside_light.normal_dir = 1;
       scene->patches.push_back(outside_light);
     }
   }
@@ -63,6 +65,8 @@ bool initialize_scene(Scene* scene)
                            top_wall.x_vec +
                            top_wall.y_vec,
                            &top_wall);
+
+      top_wall.normal_dir = -1;
       
       int cur_index = scene->patches.size();
       if (z < side_length - 1) {
@@ -112,6 +116,8 @@ bool initialize_scene(Scene* scene)
                            bot_wall.x_vec +
                            bot_wall.y_vec,
                            &bot_wall);
+
+      bot_wall.normal_dir = 1;
       
       int cur_index = scene->patches.size();
       if (z < side_length - 1) {
@@ -161,6 +167,8 @@ bool initialize_scene(Scene* scene)
                             left_wall.x_vec +
                             left_wall.y_vec,
                             &left_wall);
+
+      left_wall.normal_dir = 1;
       
       int cur_index = scene->patches.size();
       if (y < side_length - 1) {
@@ -210,6 +218,8 @@ bool initialize_scene(Scene* scene)
                              right_wall.x_vec +
                              right_wall.y_vec,
                              &right_wall);
+
+      right_wall.normal_dir = -1;
       
       int cur_index = scene->patches.size();
       if (y < side_length - 1) {
@@ -259,6 +269,8 @@ bool initialize_scene(Scene* scene)
                              front_wall.x_vec +
                              front_wall.y_vec,
                              &front_wall);
+
+      front_wall.normal_dir = -1;
       
       int cur_index = scene->patches.size();
       if (y < side_length - 1) {
@@ -313,6 +325,8 @@ bool initialize_scene(Scene* scene)
                             back_wall.x_vec +
                             back_wall.y_vec,
                             &back_wall); 
+
+      back_wall.normal_dir = 1;
       
       int cur_index = scene->patches.size();
       if (y < side_length - 1) {
@@ -377,6 +391,8 @@ bool initialize_scene(Scene* scene)
                               back_wall_2.x_vec +
                               back_wall_2.y_vec,
                               &back_wall_2);
+
+      back_wall_2.normal_dir = 1;
       
       int cur_index = scene->patches.size();
       if (y < side_length - 1) {
@@ -453,6 +469,8 @@ bool initialize_scene(Scene* scene)
                               back_wall_3.x_vec +
                               back_wall_3.y_vec,
                               &back_wall_3);
+
+      back_wall_3.normal_dir = 1;
      
       int cur_index = scene->patches.size();
       if (y < wide_length - 1) {
@@ -519,6 +537,8 @@ bool initialize_scene(Scene* scene)
                               back_wall_4.x_vec +
                               back_wall_4.y_vec,
                               &back_wall_4);
+
+      back_wall_4.normal_dir = 1;
       
       int cur_index = scene->patches.size();
       if (y < wide_length - 1) {
