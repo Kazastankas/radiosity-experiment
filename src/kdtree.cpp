@@ -143,13 +143,13 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
     float impact = t1;
     float box_hit = t1;
     /* Intersect with all geometries (given by the parent pointer)
-     * of each bounding box. */
+     * of each bounding box.
+     */
     for (size_t i = 0; i < geos.size(); i++) {
       box_hit = geos[i]->intersect(e, d, t0, impact, NULL);
 
-      if (box_hit - impact < EPSILON) {
+      if (box_hit - impact < EPSILON)
         impact = geos[i]->intersect_parent(e, d, t0, impact, out);
-      }
     }
     
     return impact;
@@ -159,6 +159,8 @@ float KDTree::intersect(float3 e, float3 d, float t0, float t1,
 void KDTree::split() {
   size_t gs = geos.size();
   
+  printf("Let's split!\n");
+
   if (gs <= MAX_KD_ELTS || depth > MAX_KD_DEPTH) {
     // Don't bother if node is small or recursive depth is too high.
     is_leaf = 1;

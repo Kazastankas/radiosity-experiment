@@ -16,16 +16,14 @@ bool visible(Scene* scene, size_t src, size_t dst)
   float3 dir = scene->patches[dst]->corner_pos -
                scene->patches[src]->corner_pos;
   float hit_time = length(dir);
+  struct Plane* out = NULL;
   dir = normalize(dir);
-  float new_hit = scene->tree.intersect(pos, dir, EPSILON, hit_time, NULL);
-  int watch_idx = 1;
+  float new_hit = scene->tree.intersect(pos, dir, EPSILON, hit_time, &out);
 
-  if (new_hit - hit_time < 0.0f) {
-    if (dst == watch_idx) printf("%d not visible from %d\n", dst, src);
+  if (NULL != out && scene->patches[dst] != out) {
     return false;
   }
 
-  if (dst == watch_idx) printf("%d visible from %d\n", dst, src);
   return true;
 }
 
