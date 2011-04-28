@@ -38,7 +38,7 @@ bool initialize_scene(Scene* scene)
       outside_light->y_vec = make_float3(0, SPLIT_UNIT, 0);
       outside_light->x_min = outside_light->y_min = 0;
       outside_light->x_max = outside_light->y_max = 1;
-      outside_light->emission = 50;
+      outside_light->emission = 30;
       outside_light->energy = GLOBAL_ENERGY;
       outside_light->bound = new Box(outside_light->corner_pos,
                                      outside_light->corner_pos +
@@ -48,12 +48,13 @@ bool initialize_scene(Scene* scene)
       outside_light->ns[0] = outside_light->ns[1] = outside_light->ns[2] =
       outside_light->ns[3] = outside_light->ns[4] = outside_light->ns[5] =
       outside_light->ns[6] = outside_light->ns[7] = scene->patches.size();
+      outside_light->normal_dir = 1;
       scene->patches.push_back(outside_light);
     }
   }
 
   int side_length = (int) (10.0f / SPLIT_UNIT);
-  int wider_length = (int) (8.0f / SPLIT_UNIT);
+  int wider_length = (int) (6.0f / SPLIT_UNIT);
   int wide_length = (int) (4.0f / SPLIT_UNIT);
   int short_length = (int) (2.0f / SPLIT_UNIT);
   
@@ -101,6 +102,8 @@ bool initialize_scene(Scene* scene)
       
       if (x > 0) top_wall->ns[7] = cur_index - side_length;
       else top_wall->ns[7] = cur_index;
+      
+      top_wall->normal_dir = -1;
       
       scene->patches.push_back(top_wall);
     }
@@ -151,6 +154,8 @@ bool initialize_scene(Scene* scene)
       if (x > 0) bot_wall->ns[7] = cur_index - side_length;
       else bot_wall->ns[7] = cur_index;
       
+      bot_wall->normal_dir = 1;
+      
       scene->patches.push_back(bot_wall);
     }
   }
@@ -199,6 +204,8 @@ bool initialize_scene(Scene* scene)
       
       if (z > 0) left_wall->ns[7] = cur_index - 1;
       else left_wall->ns[7] = cur_index;
+      
+      left_wall->normal_dir = 1;
       
       scene->patches.push_back(left_wall);
     }
@@ -251,6 +258,8 @@ bool initialize_scene(Scene* scene)
       if (z > 0) right_wall->ns[7] = cur_index - 1;
       else right_wall->ns[7] = cur_index;
       
+      right_wall->normal_dir = -1;
+      
       scene->patches.push_back(right_wall);
     }
   }
@@ -301,6 +310,8 @@ bool initialize_scene(Scene* scene)
       
       if (x > 0) front_wall->ns[7] = cur_index - side_length;
       else front_wall->ns[7] = cur_index; 
+      
+      front_wall->normal_dir = -1;
       
       scene->patches.push_back(front_wall);
     }
@@ -371,6 +382,9 @@ bool initialize_scene(Scene* scene)
             back_wall->ns[4] = bw4_idx + y - 1 - (side_length - wide_length);
         }
       }
+
+      back_wall->normal_dir = 1;
+      
       scene->patches.push_back(back_wall);
     }
   }
@@ -449,6 +463,9 @@ bool initialize_scene(Scene* scene)
                                 (side_length - wide_length);
         }
       }
+      
+      back_wall_2->normal_dir = 1;
+      
       scene->patches.push_back(back_wall_2);
     }
   }
@@ -519,6 +536,8 @@ bool initialize_scene(Scene* scene)
          if (y > 0) back_wall_3->ns[4] = bw2_idx + y - 1;
       }
 
+      back_wall_3->normal_dir = 1;
+      
       scene->patches.push_back(back_wall_3);
     }
   }
@@ -591,11 +610,13 @@ bool initialize_scene(Scene* scene)
                                          (side_length - wide_length);
       }
       
+      back_wall_4->normal_dir = 1;
+      
       scene->patches.push_back(back_wall_4);
     }
   }
   
-  for (int x = 0; x < (int) (10.0f / SPLIT_UNIT); x++) {
+  for (int x = 0; x < (int) (4.0f / SPLIT_UNIT); x++) {
     for (int y = 0; y < (int) (10.0f / SPLIT_UNIT); y++) {
       Plane* inner_wall = new Plane;
       int cur_index = scene->patches.size();
@@ -618,18 +639,18 @@ bool initialize_scene(Scene* scene)
         if (x > 0) inner_wall->ns[0] = cur_index - side_length + 1;
         else inner_wall->ns[0] = cur_index;
         inner_wall->ns[1] = cur_index + 1;
-        if (x < side_length - 1)
+        if (x < wide_length - 1)
           inner_wall->ns[2] = cur_index + side_length + 1;
         else inner_wall->ns[2] = cur_index;
       } else {
         inner_wall->ns[0] = inner_wall->ns[1] = inner_wall->ns[2] = cur_index;
       }
 
-      if (x < side_length - 1) inner_wall->ns[3] = cur_index + side_length;
+      if (x < wide_length - 1) inner_wall->ns[3] = cur_index + side_length;
       else inner_wall->ns[3] = cur_index;
 
       if (y > 0) {
-        if (x < side_length - 1)
+        if (x < wide_length - 1)
           inner_wall->ns[4] = cur_index + side_length - 1;
         else inner_wall->ns[4] = cur_index;
         inner_wall->ns[5] = cur_index - 1;
@@ -642,10 +663,68 @@ bool initialize_scene(Scene* scene)
       if (x > 0) inner_wall->ns[7] = cur_index - side_length;
       else inner_wall->ns[7] = cur_index; 
       
+      inner_wall->normal_dir = -1;
+      
       scene->patches.push_back(inner_wall);
     }
   }
   
+  for (int x = 0; x < (int) (4.0f / SPLIT_UNIT); x++) {
+    for (int y = 0; y < (int) (10.0f / SPLIT_UNIT); y++) {
+      Plane* inner_wall_2 = new Plane;
+      int cur_index = scene->patches.size();
+      inner_wall_2->corner_pos = make_float3(((float) x * SPLIT_UNIT) + 1.0f,
+                                             ((float) y * SPLIT_UNIT) - 5.0f,
+                                             -1);
+      inner_wall_2->reflectivity = make_float3(0.3, 0.3, 0.3);
+      inner_wall_2->x_vec = make_float3(SPLIT_UNIT, 0, 0);
+      inner_wall_2->y_vec = make_float3(0, SPLIT_UNIT, 0);
+      inner_wall_2->x_min = inner_wall_2->y_min = 0;
+      inner_wall_2->x_max = inner_wall_2->y_max = 1;
+      inner_wall_2->emission = 0;
+      inner_wall_2->energy = GLOBAL_ENERGY;
+      inner_wall_2->bound = new Box(inner_wall_2->corner_pos,
+                                    inner_wall_2->corner_pos +
+                                    inner_wall_2->x_vec +
+                                    inner_wall_2->y_vec,
+                                    inner_wall_2);
+      
+      if (y < side_length - 1) {
+        if (x > 0) inner_wall_2->ns[0] = cur_index - side_length + 1;
+        else inner_wall_2->ns[0] = cur_index;
+        inner_wall_2->ns[1] = cur_index + 1;
+        if (x < wide_length - 1)
+          inner_wall_2->ns[2] = cur_index + side_length + 1;
+        else inner_wall_2->ns[2] = cur_index;
+      } else {
+        inner_wall_2->ns[0] = inner_wall_2->ns[1] =
+        inner_wall_2->ns[2] = cur_index;
+      }
+
+      if (x < wide_length - 1) inner_wall_2->ns[3] = cur_index + side_length;
+      else inner_wall_2->ns[3] = cur_index;
+
+      if (y > 0) {
+        if (x < wide_length - 1)
+          inner_wall_2->ns[4] = cur_index + side_length - 1;
+        else inner_wall_2->ns[4] = cur_index;
+        inner_wall_2->ns[5] = cur_index - 1;
+        if (x > 0) inner_wall_2->ns[6] = cur_index - side_length - 1;
+        else inner_wall_2->ns[6] = cur_index;
+      } else {
+        inner_wall_2->ns[4] = inner_wall_2->ns[5] =
+        inner_wall_2->ns[6] = cur_index;
+      }
+      
+      if (x > 0) inner_wall_2->ns[7] = cur_index - side_length;
+      else inner_wall_2->ns[7] = cur_index; 
+      
+      inner_wall_2->normal_dir = -1;
+      
+      scene->patches.push_back(inner_wall_2);
+    }
+  }
+
   for (size_t i = 0; i < scene->patches.size(); i++) {
     if (!IS_LIGHT(i))
       scene->tree.insert(scene->patches[i]->bound);

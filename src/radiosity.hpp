@@ -37,6 +37,7 @@ struct Plane
     float3 reflectivity;
     float emission;
     float energy;
+    char normal_dir;
 
     // NW N NE E SE S SW W neighbors
     size_t ns[8];
