@@ -8,6 +8,7 @@
 #include "box.hpp"
 #include "radiosity.hpp"
 #include <algorithm>
+#include <stdio.h>
 
 namespace radiosity {
 
@@ -220,7 +221,7 @@ float Box::intersect_parent(float3 e, float3 d, float t0, float t1,
   float3 p0 = parent->corner_pos;
   float3 p1 = p0 + parent->x_vec;
   float3 p2 = p0 + parent->y_vec;
-    
+  
   // column vectors
   float3 c1 = -d;
   float3 c2 = p1 - p0;
@@ -241,7 +242,7 @@ float Box::intersect_parent(float3 e, float3 d, float t0, float t1,
       u_hit >= parent->x_min && u_hit <= parent->x_max &&
       v_hit >= parent->y_min && v_hit <= parent->y_max)
   {
-    if(out) *out = parent;
+    if (out) *out = parent;
     return t_hit;
   }
   return t1;

@@ -40,13 +40,13 @@ struct Plane
 
     // NW N NE E SE S SW W neighbors
     size_t ns[8];
-    Box bound;
+    Box* bound;
 };
 
 // Contains all state, perhaps also the data we calculate.
 struct Scene
 {
-    std::vector<Plane> patches;
+    std::vector<Plane*> patches;
     KDTree tree;
 };
 
