@@ -4,7 +4,7 @@
 #include "cutil_math.hpp"
 #include <stdio.h>
 
-#define IS_LIGHT(x)		(x < (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
+#define IS_LIGHT(x)		(x < 1)// (2/SPLIT_UNIT) * (2/SPLIT_UNIT))
 
 namespace radiosity {
 
@@ -114,8 +114,9 @@ bool calc_radiosity(Scene* scene, float3* matrix, size_t dim)
 //Calculate the form factor between two planes
 float form_factor(Plane *p1, Plane *p2)
 {
-	float3 p1_norm = cross(p1->x_vec, p1->y_vec);
-	float3 p2_norm = cross(p2->x_vec, p2->y_vec);
+	float3 p1_norm = p1->normal_dir * cross(p1->x_vec, p1->y_vec);
+	float3 p2_norm = p2->normal_dir * cross(p2->x_vec, p2->y_vec);
+
 	float a1 = length(p1_norm);
 	float a2 = length(p2_norm);
 
@@ -126,6 +127,9 @@ float form_factor(Plane *p1, Plane *p2)
 	btwn    = normalize(btwn);
 	p1_norm = normalize(p1_norm);
 	p2_norm = normalize(p2_norm);
+
+	if(dot(p1_norm, btwn) < 0 || dot(p2_norm, btwn) > 0)
+		return 0.0;
 
 	float dTheta = dot(btwn, p1_norm) * dot(btwn, p2_norm);
 	// since we effectively divide by a1 at the end, only take on a2
